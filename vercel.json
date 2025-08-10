@@ -3,9 +3,6 @@
   "outputDirectory": ".next",
   "framework": "nextjs",
   "installCommand": "npm install",
-  "env": {
-    "DATABASE_URL": "@database_url"
-  },
   "build": {
     "env": {
       "GOOGLE_APPLICATION_CREDENTIALS": "/tmp/google-cloud-key.json"
