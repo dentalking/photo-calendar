@@ -259,7 +259,8 @@ export const AIUtils = {
 };
 
 // Re-export AIParsingError as a proper interface type
-export { AIParsingError } from './types';
+import { AIParsingError } from './types';
+export { AIParsingError };
 
 // Constants for easy reference
 export const AI_MODELS = {

@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
-import { OCRAIIntegrationService } from '../../../../lib/ai';
+import { OCRAIIntegrationService, AIParsingError } from '../../../../lib/ai';
 import { authOptions } from '../../auth/[...nextauth]/route';
 
 export async function POST(request: NextRequest) {
@@ -142,17 +142,18 @@ export async function POST(request: NextRequest) {
     console.error('Calendar parsing error:', error);
 
     // Handle specific error types
+    if (error instanceof AIParsingError) {
+      return NextResponse.json(
+        { 
+          error: 'AI parsing failed', 
+          details: error.message,
+          retryable: error.retryable || false,
+        },
+        { status: 422 }
+      );
+    }
+    
     if (error instanceof Error) {
-      if (error.name === 'AIParsingError') {
-        return NextResponse.json(
-          { 
-            error: 'AI parsing failed', 
-            details: error.message,
-            retryable: (error as any).retryable || false,
-          },
-          { status: 422 }
-        );
-      }
 
       if (error.message.includes('rate limit')) {
         return NextResponse.json(
