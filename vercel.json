@@ -4,7 +4,6 @@
   "framework": "nextjs",
   "installCommand": "npm install",
   "env": {
-    "NEXTAUTH_URL": "@nextauth_url",
     "DATABASE_URL": "@database_url"
   },
   "build": {
