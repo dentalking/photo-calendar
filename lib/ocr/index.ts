@@ -45,20 +45,27 @@ export {
   ERROR_CONFIG,
 } from './config';
 
+// Import required classes for OCRUtils
+import { OCRService } from './ocr-service';
+import { ImagePreprocessor } from './preprocessing';
+import { TextParser } from './text-parsers';
+import { ocrCache } from './cache';
+import type { OCRConfig } from './types';
+
 // Utility functions
 export const OCRUtils = {
   /**
    * Create OCR service with custom configuration
    */
-  createService: (config?: Partial<import('./types').OCRConfig>) => {
-    return new import('./ocr-service').OCRService(config);
+  createService: (config?: Partial<OCRConfig>) => {
+    return new OCRService(config);
   },
 
   /**
    * Quick text extraction from image buffer
    */
   quickExtract: async (imageBuffer: Buffer): Promise<string> => {
-    const service = new import('./ocr-service').OCRService();
+    const service = new OCRService();
     return service.extractTextQuick(imageBuffer);
   },
 
@@ -74,7 +81,7 @@ export const OCRUtils = {
     title?: string;
     description?: string;
   }> => {
-    const service = new import('./ocr-service').OCRService();
+    const service = new OCRService();
     const result = await service.extractText(imageBuffer, { documentType });
     
     return {
@@ -89,7 +96,7 @@ export const OCRUtils = {
    * Validate image for OCR processing
    */
   validateImage: async (imageBuffer: Buffer) => {
-    const preprocessor = new import('./preprocessing').ImagePreprocessor();
+    const preprocessor = new ImagePreprocessor();
     return preprocessor.validateImage(imageBuffer);
   },
 
@@ -97,7 +104,7 @@ export const OCRUtils = {
    * Enhance image quality for better OCR
    */
   enhanceImage: async (imageBuffer: Buffer) => {
-    const preprocessor = new import('./preprocessing').ImagePreprocessor();
+    const preprocessor = new ImagePreprocessor();
     return preprocessor.enhanceForOCR(imageBuffer);
   },
 
@@ -105,7 +112,7 @@ export const OCRUtils = {
    * Parse dates from text
    */
   parseDates: (text: string, language: 'ko' | 'en' = 'ko') => {
-    const parser = new import('./text-parsers').TextParser({
+    const parser = new TextParser({
       primaryLanguage: language,
     });
     return parser.parseDates(text);
@@ -115,7 +122,7 @@ export const OCRUtils = {
    * Parse locations from text
    */
   parseLocations: (text: string) => {
-    const parser = new import('./text-parsers').TextParser();
+    const parser = new TextParser();
     return parser.parseLocations(text);
   },
 
@@ -123,14 +130,14 @@ export const OCRUtils = {
    * Get cache statistics
    */
   getCacheStats: () => {
-    return import('./cache').ocrCache.getStats();
+    return ocrCache.getStats();
   },
 
   /**
    * Clear cache
    */
   clearCache: () => {
-    import('./cache').ocrCache.clear();
+    ocrCache.clear();
   },
 };
 
