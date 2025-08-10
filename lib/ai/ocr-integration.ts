@@ -54,12 +54,20 @@ interface EnhancedCalendarEvent extends ParsedCalendarEvent {
 }
 
 export class OCRAIIntegrationService {
-  private aiService: AIParsingService;
+  private aiService: AIParsingService | null = null;
+  private apiKey: string | undefined;
 
   constructor(apiKey?: string) {
-    this.aiService = new AIParsingService({
-      apiKey: apiKey || process.env.OPENAI_API_KEY,
-    });
+    this.apiKey = apiKey || process.env.OPENAI_API_KEY;
+  }
+  
+  private getAIService(): AIParsingService {
+    if (!this.aiService) {
+      this.aiService = new AIParsingService({
+        apiKey: this.apiKey,
+      });
+    }
+    return this.aiService;
   }
 
   /**
@@ -94,7 +102,7 @@ export class OCRAIIntegrationService {
       if (shouldUseAI) {
         // Step 4: AI-enhanced parsing
         processingChain.push('ai-parsing');
-        aiResult = await this.aiService.parseEvents(ocrResult.text, context);
+        aiResult = await this.getAIService().parseEvents(ocrResult.text, context);
         
         // Step 5: Merge OCR and AI results
         processingChain.push('result-merging');
@@ -156,7 +164,7 @@ export class OCRAIIntegrationService {
     } = {}
   ): Promise<AIParsingResult> {
     const context = this.createParsingContextFromText(ocrText, options);
-    return await this.aiService.parseEvents(ocrText, context);
+    return await this.getAIService().parseEvents(ocrText, context);
   }
 
   /**
@@ -227,7 +235,7 @@ export class OCRAIIntegrationService {
       successRate: number;
     };
   }> {
-    const aiStatistics = await this.aiService.getStatistics();
+    const aiStatistics = await this.getAIService().getStatistics();
     
     // These would be tracked in a real implementation
     const processingMetrics = {

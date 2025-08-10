@@ -4,18 +4,23 @@
  */
 
 // Core services
-export { AIParsingService } from './ai-parsing-service';
-export { IntelligentEventParser } from './intelligent-parser';
-export { OCRAIIntegrationService } from './ocr-integration';
+import { AIParsingService } from './ai-parsing-service';
+import { IntelligentEventParser } from './intelligent-parser';
+import { OCRAIIntegrationService } from './ocr-integration';
+
+export { AIParsingService, IntelligentEventParser, OCRAIIntegrationService };
 
 // Validation and correction
-export { EventValidator, EventCorrector } from './validation';
+import { EventValidator, EventCorrector } from './validation';
+export { EventValidator, EventCorrector };
 
 // Cost optimization
-export { CostOptimizer } from './cost-optimizer';
+import { CostOptimizer } from './cost-optimizer';
+export { CostOptimizer };
 
 // Caching system
-export { PromptCacheManager } from './cache';
+import { PromptCacheManager } from './cache';
+export { PromptCacheManager };
 
 // Prompt engineering
 export { 
@@ -63,7 +68,7 @@ export type {
   PromptCache,
   
   // Error types
-  AIParsingError,
+  // AIParsingError is exported as a class below
 } from './types';
 
 // Configuration
@@ -253,18 +258,8 @@ export const AIUtils = {
   },
 };
 
-// Error class for convenience
-export class AIParsingError extends Error {
-  constructor(
-    message: string,
-    public code: string,
-    public retryable: boolean = false,
-    public context?: any
-  ) {
-    super(message);
-    this.name = 'AIParsingError';
-  }
-}
+// Re-export AIParsingError as a proper interface type
+export { AIParsingError } from './types';
 
 // Constants for easy reference
 export const AI_MODELS = {

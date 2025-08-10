@@ -36,13 +36,11 @@ export class AIParsingService {
     this.config = { ...DEFAULT_AI_CONFIG, ...config };
     
     if (!this.config.apiKey) {
-      const error: AIParsingError = {
-        name: 'AIParsingError',
-        message: 'OpenAI API key is required',
-        code: 'MISSING_API_KEY',
-        retryable: false
-      };
-      throw error;
+      throw new AIParsingError(
+        'OpenAI API key is required',
+        'MISSING_API_KEY',
+        false
+      );
     }
 
     this.openai = new OpenAI({
@@ -207,13 +205,11 @@ export class AIParsingService {
         }
       }
 
-      const aiError: AIParsingError = {
-        name: 'AIParsingError',
-        message: `OpenAI API error: ${error instanceof Error ? error.message : String(error)}`,
-        code: 'OPENAI_API_ERROR',
-        retryable: this.isRetryableError(error)
-      };
-      throw aiError;
+      throw new AIParsingError(
+        `OpenAI API error: ${error instanceof Error ? error.message : String(error)}`,
+        'OPENAI_API_ERROR',
+        this.isRetryableError(error)
+      );
     }
   }
 
@@ -274,13 +270,11 @@ export class AIParsingService {
     const events: ParsedCalendarEvent[] = [];
 
     if (!aiResponse.events || !Array.isArray(aiResponse.events)) {
-      const aiError: AIParsingError = {
-        name: 'AIParsingError',
-        message: 'Invalid AI response format: missing events array',
-        code: 'INVALID_RESPONSE_FORMAT',
-        retryable: false
-      };
-      throw aiError;
+      throw new AIParsingError(
+        'Invalid AI response format: missing events array',
+        'INVALID_RESPONSE_FORMAT',
+        false
+      );
     }
 
     for (const eventData of aiResponse.events) {
@@ -425,37 +419,37 @@ export class AIParsingService {
       const errorType = error.error.type;
       const isRetryable = ERROR_CONFIG.retryableErrors.includes(errorType);
       
-      const aiError: AIParsingError = {
-        name: 'AIParsingError',
-        message: `OpenAI API error: ${error.error.message || error.message}`,
-        code: errorType,
-        retryable: isRetryable,
+      throw new AIParsingError(
+        `OpenAI API error: ${error.error.message || error.message}`,
+        errorType,
+        isRetryable,
+        undefined,
+        undefined,
         context
-      };
-      throw aiError;
+      );
     }
 
     // Handle network errors
     if (error.code === 'ECONNREFUSED' || error.code === 'ETIMEDOUT') {
-      const aiError: AIParsingError = {
-        name: 'AIParsingError',
-        message: 'Network error: Unable to connect to OpenAI API',
-        code: 'NETWORK_ERROR',
-        retryable: true,
+      throw new AIParsingError(
+        'Network error: Unable to connect to OpenAI API',
+        'NETWORK_ERROR',
+        true,
+        undefined,
+        undefined,
         context
-      };
-      throw aiError;
+      );
     }
 
     // Generic error
-    const aiError: AIParsingError = {
-      name: 'AIParsingError',
-      message: `Unexpected error during AI parsing: ${error.message}`,
-      code: 'UNKNOWN_ERROR',
-      retryable: false,
+    throw new AIParsingError(
+      `Unexpected error during AI parsing: ${error.message}`,
+      'UNKNOWN_ERROR',
+      false,
+      undefined,
+      undefined,
       context
-    };
-    throw aiError;
+    );
   }
 
   /**

@@ -286,12 +286,29 @@ export interface ParsingMetrics {
   modelUsageStats: Record<string, number>;
 }
 
-export interface AIParsingError extends Error {
+export class AIParsingError extends Error {
   code: string;
   statusCode?: number;
   retryable: boolean;
   tokenUsage?: TokenUsage;
   context?: any;
+
+  constructor(
+    message: string,
+    code: string,
+    retryable: boolean = false,
+    statusCode?: number,
+    tokenUsage?: TokenUsage,
+    context?: any
+  ) {
+    super(message);
+    this.name = 'AIParsingError';
+    this.code = code;
+    this.statusCode = statusCode;
+    this.retryable = retryable;
+    this.tokenUsage = tokenUsage;
+    this.context = context;
+  }
 }
 
 // Korean-specific types
