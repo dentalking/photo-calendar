@@ -1,0 +1,293 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// NextAuth.js required models for OAuth authentication
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verificationtokens")
+}
+
+// Application-specific models
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  
+  // Subscription and usage tracking
+  subscriptionTier     SubscriptionTier @default(FREE)
+  subscriptionId       String?
+  subscriptionStatus   SubscriptionStatus @default(INACTIVE)
+  currentPeriodStart   DateTime?
+  currentPeriodEnd     DateTime?
+  
+  // Usage tracking for current billing period
+  monthlyPhotoCount    Int      @default(0)
+  lastPhotoUpload      DateTime?
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime? // Soft delete support
+  
+  // Relations
+  accounts         Account[]
+  sessions         Session[]
+  events           Event[]
+  photoExtractions PhotoExtraction[]
+  usageRecords     UsageRecord[]
+  subscriptions    Subscription[]
+
+  @@map("users")
+  @@index([email])
+  @@index([subscriptionTier])
+  @@index([deletedAt])
+}
+
+model Event {
+  id          String   @id @default(cuid())
+  userId      String
+  
+  // Event details
+  title       String
+  description String?
+  startDate   DateTime
+  endDate     DateTime?
+  isAllDay    Boolean  @default(false)
+  
+  // Location information
+  location    String?
+  address     String?
+  
+  // AI extraction metadata
+  confidenceScore Float    @default(0.0) // 0.0 to 1.0 confidence from AI
+  extractionId    String?  // Link to PhotoExtraction
+  
+  // Event status and categorization
+  status      EventStatus @default(CONFIRMED)
+  category    String?     // e.g., "meeting", "personal", "travel"
+  color       String?     // Hex color for UI display
+  
+  // User interaction
+  isUserVerified Boolean  @default(false) // User confirmed the event
+  isVisible      Boolean  @default(true)   // User can hide events
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime? // Soft delete support
+  
+  // Relations
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  photoExtraction PhotoExtraction? @relation(fields: [extractionId], references: [id], onDelete: SetNull)
+
+  @@map("events")
+  @@index([userId])
+  @@index([startDate])
+  @@index([status])
+  @@index([confidenceScore])
+  @@index([deletedAt])
+}
+
+model PhotoExtraction {
+  id       String @id @default(cuid())
+  userId   String
+  
+  // Photo information
+  fileName        String
+  originalUrl     String
+  thumbnailUrl    String?
+  fileSize        Int             // in bytes
+  mimeType        String
+  dimensions      String?         // "1920x1080" format
+  
+  // Processing status
+  status          ProcessingStatus @default(PENDING)
+  
+  // OCR Results
+  extractedText   String?         // Raw OCR text
+  ocrConfidence   Float?          // OCR confidence score 0.0-1.0
+  
+  // AI Processing Results
+  aiAnalysis      Json?           // Structured AI analysis results
+  eventsFound     Int             @default(0)
+  processingTime  Int?            // Processing time in milliseconds
+  
+  // Error handling
+  errorMessage    String?
+  retryCount      Int             @default(0)
+  maxRetries      Int             @default(3)
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime? // Soft delete support
+  
+  // Relations
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  events Event[]
+
+  @@map("photo_extractions")
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([deletedAt])
+}
+
+model Subscription {
+  id                 String             @id @default(cuid())
+  userId             String
+  
+  // Stripe subscription details
+  stripeSubscriptionId String?          @unique
+  stripeCustomerId     String?
+  stripePriceId        String?
+  
+  // Subscription details
+  tier               SubscriptionTier   @default(FREE)
+  status             SubscriptionStatus @default(ACTIVE)
+  
+  // Billing period
+  currentPeriodStart DateTime
+  currentPeriodEnd   DateTime
+  
+  // Payment information
+  amount             Int?               // Amount in cents
+  currency           String?            @default("USD")
+  interval           BillingInterval?   @default(MONTHLY)
+  
+  // Trial information
+  trialStart         DateTime?
+  trialEnd           DateTime?
+  
+  // Cancellation
+  cancelAt           DateTime?
+  canceledAt         DateTime?
+  cancelReason       String?
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("subscriptions")
+  @@index([userId])
+  @@index([status])
+  @@index([tier])
+  @@index([currentPeriodEnd])
+}
+
+model UsageRecord {
+  id        String    @id @default(cuid())
+  userId    String
+  
+  // Usage details
+  action    UsageAction
+  count     Int         @default(1)
+  metadata  Json?       // Additional usage data
+  
+  // Billing period reference
+  billingPeriodStart DateTime
+  billingPeriodEnd   DateTime
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("usage_records")
+  @@index([userId])
+  @@index([action])
+  @@index([billingPeriodStart, billingPeriodEnd])
+  @@index([createdAt])
+}
+
+// Enums
+enum SubscriptionTier {
+  FREE
+  PRO
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  INACTIVE
+  PAST_DUE
+  CANCELED
+  UNPAID
+  TRIALING
+}
+
+enum BillingInterval {
+  MONTHLY
+  YEARLY
+}
+
+enum EventStatus {
+  PENDING     // Extracted but not confirmed
+  CONFIRMED   // User confirmed or AI high confidence
+  REJECTED    // User rejected the event
+  MODIFIED    // User modified the extracted event
+}
+
+enum ProcessingStatus {
+  PENDING     // Just uploaded, waiting for processing
+  PROCESSING  // Currently being processed
+  COMPLETED   // Successfully processed
+  FAILED      // Processing failed
+  RETRYING    // Retrying after failure
+}
+
+enum UsageAction {
+  PHOTO_UPLOAD
+  OCR_PROCESSING
+  AI_ANALYSIS
+  EVENT_CREATION
+  API_REQUEST
+}

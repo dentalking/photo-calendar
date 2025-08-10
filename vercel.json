@@ -1,0 +1,23 @@
+{
+  "buildCommand": "npx prisma generate && next build",
+  "outputDirectory": ".next",
+  "framework": "nextjs",
+  "installCommand": "npm install",
+  "env": {
+    "NEXTAUTH_URL": "@nextauth_url",
+    "DATABASE_URL": "@database_url"
+  },
+  "build": {
+    "env": {
+      "GOOGLE_APPLICATION_CREDENTIALS": "/tmp/google-cloud-key.json"
+    }
+  },
+  "functions": {
+    "app/api/photo/extract/route.ts": {
+      "maxDuration": 30
+    },
+    "app/api/events/import/route.ts": {
+      "maxDuration": 30
+    }
+  }
+}
