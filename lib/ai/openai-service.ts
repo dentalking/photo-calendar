@@ -6,14 +6,18 @@
 import OpenAI from 'openai';
 import { ParsedCalendarEvent, AIAnalysisOptions, AIAnalysisResult } from './types';
 import { PROMPT_TEMPLATES } from './prompt-templates';
-import { eventValidationService } from './validation';
-import { AICacheManager } from './cache';
+import { EventValidator } from './validation';
+import { PromptCacheManager } from './cache';
 import { AI_CONFIG } from './config';
 
 const EVENT_EXTRACTION_PROMPT = PROMPT_TEMPLATES.eventExtraction?.template || '{context}\n\nExtract calendar events from the following text:\n{text}';
 const REFINEMENT_PROMPT = PROMPT_TEMPLATES.refinement?.template || 'Refine this event:\n{event}\n\nErrors:\n{errors}\n\nOriginal text:\n{originalText}';
-const aiCache = new AICacheManager();
-const validateParsedEvent = (event: ParsedCalendarEvent) => eventValidationService.validateEvent(event);
+const aiCache = new PromptCacheManager();
+const validator = new EventValidator();
+const validateParsedEvent = async (event: ParsedCalendarEvent) => {
+  const errors = await validator.validateEvent(event);
+  return { isValid: errors.length === 0, errors: errors.map(e => e.message) };
+};
 
 export class AIAnalysisService {
   private openai: OpenAI;

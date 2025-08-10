@@ -159,18 +159,8 @@ function extractTitle(text: string): string | undefined {
   return firstLine;
 }
 
-// Export error class for convenience
-export class OCRError extends Error {
-  constructor(
-    message: string,
-    public code: string,
-    public retryable: boolean = false,
-    public context?: any
-  ) {
-    super(message);
-    this.name = 'OCRError';
-  }
-}
+// Re-export error class from types for convenience
+export { OCRError } from './types';
 
 // Export constants for easy access
 export const OCR_ENGINES = {

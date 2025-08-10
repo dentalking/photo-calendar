@@ -188,11 +188,26 @@ export interface TextParsingContext {
   confidenceThreshold: number;
 }
 
-export interface OCRError extends Error {
+export class OCRError extends Error {
   code: string;
   statusCode?: number;
   retryable: boolean;
   context?: any;
+
+  constructor(
+    message: string,
+    code: string,
+    retryable: boolean = false,
+    statusCode?: number,
+    context?: any
+  ) {
+    super(message);
+    this.name = 'OCRError';
+    this.code = code;
+    this.statusCode = statusCode;
+    this.retryable = retryable;
+    this.context = context;
+  }
 }
 
 // Korean text processing specific types
