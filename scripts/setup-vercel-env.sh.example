@@ -1,0 +1,53 @@
+#!/bin/bash
+
+# ⚠️ IMPORTANT: Copy this file to setup-vercel-env.sh and fill in your actual values
+# The actual setup-vercel-env.sh should never be committed to git
+
+echo "🚀 Vercel 환경 변수 설정 시작..."
+
+# Production 환경 변수 설정
+echo "📝 필수 환경 변수 설정 중..."
+
+# NextAuth 설정
+echo "YOUR_PRODUCTION_URL" | vercel env add NEXTAUTH_URL production --force
+echo "YOUR_NEXTAUTH_SECRET" | vercel env add NEXTAUTH_SECRET production --force
+
+# Database 설정
+echo "YOUR_DATABASE_URL" | vercel env add DATABASE_URL production --force
+echo "YOUR_DIRECT_DATABASE_URL" | vercel env add DIRECT_URL production --force
+
+# Google OAuth
+echo "YOUR_GOOGLE_CLIENT_ID" | vercel env add GOOGLE_CLIENT_ID production --force
+echo "YOUR_GOOGLE_CLIENT_SECRET" | vercel env add GOOGLE_CLIENT_SECRET production --force
+
+# Google Cloud
+echo "YOUR_GOOGLE_CLOUD_PROJECT" | vercel env add GOOGLE_CLOUD_PROJECT production --force
+
+# OpenAI
+echo "YOUR_OPENAI_API_KEY" | vercel env add OPENAI_API_KEY production --force
+
+# Application Settings
+echo "5242880" | vercel env add MAX_FILE_SIZE production --force
+echo "image/jpeg,image/png,image/gif,image/webp" | vercel env add ALLOWED_FILE_TYPES production --force
+echo "30" | vercel env add FREE_MONTHLY_LIMIT production --force
+echo "1000" | vercel env add PRO_MONTHLY_LIMIT production --force
+
+# Google Cloud 서비스 계정 키를 Base64로 인코딩
+if [ -f "google-cloud-key.json" ]; then
+  echo "📦 Google Cloud 키 파일 인코딩 중..."
+  GOOGLE_KEY_BASE64=$(base64 -i google-cloud-key.json | tr -d '\n')
+  echo "$GOOGLE_KEY_BASE64" | vercel env add GOOGLE_APPLICATION_CREDENTIALS_BASE64 production --force
+fi
+
+echo "✅ 환경 변수 설정 완료!"
+echo ""
+echo "📋 설정된 환경 변수 목록:"
+vercel env ls production
+
+echo ""
+echo "🔍 다음 단계:"
+echo "1. Google Cloud Console에서 OAuth 리다이렉트 URI 추가:"
+echo "   https://your-domain.vercel.app/api/auth/callback/google"
+echo ""
+echo "2. 코드에서 Google Cloud 키 디코딩 로직 추가 필요"
+echo "3. vercel --prod 명령어로 배포"

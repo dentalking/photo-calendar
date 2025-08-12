@@ -6,6 +6,7 @@
 import { ImageAnnotatorClient } from '@google-cloud/vision';
 import { OCRResult, OCRConfig, OCRError, OCRMetadata } from './types';
 import { DEFAULT_OCR_CONFIG, VISION_API_CONFIG, QUALITY_THRESHOLDS } from './config';
+import { setupGoogleCloudCredentials } from './google-vision-config';
 
 export class GoogleVisionService {
   private client: ImageAnnotatorClient;
@@ -15,6 +16,13 @@ export class GoogleVisionService {
 
   constructor(config: Partial<OCRConfig> = {}) {
     this.config = { ...DEFAULT_OCR_CONFIG, ...config };
+    
+    // Setup Google Cloud credentials (handles Base64 decoding in production)
+    try {
+      setupGoogleCloudCredentials();
+    } catch (error) {
+      console.error('Failed to setup Google Cloud credentials:', error);
+    }
     
     // Initialize Google Vision client
     const clientConfig: any = {};

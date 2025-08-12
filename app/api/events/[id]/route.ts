@@ -1,7 +1,9 @@
-import { NextRequest } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
+import { getServerSession } from "next-auth/next"
+import { authOptions } from "@/lib/auth/auth-options"
 import { EventService } from "@/lib/services/event"
 import { updateEventSchema } from "@/lib/validations/event"
-import { createProtectedRoute, AuthenticatedRequest, ApiResponse } from "@/lib/middleware/auth"
+import { ApiResponse } from "@/lib/middleware/auth"
 
 interface RouteParams {
   params: {
@@ -13,15 +15,21 @@ interface RouteParams {
  * GET /api/events/[id]
  * Get single event by ID
  */
-async function getEvent(request: AuthenticatedRequest, { params }: RouteParams) {
+export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
+    // Check authentication
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.id) {
+      return ApiResponse.unauthorized('Authentication required')
+    }
+
     const { id } = params
     
     if (!id) {
       return ApiResponse.badRequest("Event ID is required")
     }
 
-    const event = await EventService.getEventById(id, request.userId!)
+    const event = await EventService.getEventById(id, session.user.id)
     
     if (!event) {
       return ApiResponse.notFound("Event not found")
@@ -41,8 +49,14 @@ async function getEvent(request: AuthenticatedRequest, { params }: RouteParams) 
  * PUT /api/events/[id]
  * Update event by ID
  */
-async function updateEvent(request: AuthenticatedRequest, { params }: RouteParams) {
+export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
+    // Check authentication
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.id) {
+      return ApiResponse.unauthorized('Authentication required')
+    }
+
     const { id } = params
     
     if (!id) {
@@ -53,7 +67,7 @@ async function updateEvent(request: AuthenticatedRequest, { params }: RouteParam
     const validatedData = updateEventSchema.parse(body)
     
     // Get current event for conflict checking
-    const currentEvent = await EventService.getEventById(id, request.userId!)
+    const currentEvent = await EventService.getEventById(id, session.user.id)
     if (!currentEvent) {
       return ApiResponse.notFound("Event not found")
     }
@@ -66,7 +80,7 @@ async function updateEvent(request: AuthenticatedRequest, { params }: RouteParam
         : currentEvent.endDate
       
       const overlapCheck = await EventService.checkEventOverlap(
-        request.userId!,
+        session.user.id,
         startDate,
         endDate,
         id // Exclude current event from conflict check
@@ -80,7 +94,7 @@ async function updateEvent(request: AuthenticatedRequest, { params }: RouteParam
       }
     }
 
-    const updatedEvent = await EventService.updateEvent(id, request.userId!, validatedData)
+    const updatedEvent = await EventService.updateEvent(id, session.user.id, validatedData)
     
     if (!updatedEvent) {
       return ApiResponse.notFound("Event not found")
@@ -103,15 +117,21 @@ async function updateEvent(request: AuthenticatedRequest, { params }: RouteParam
  * DELETE /api/events/[id]
  * Soft delete event by ID
  */
-async function deleteEvent(request: AuthenticatedRequest, { params }: RouteParams) {
+export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
+    // Check authentication
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.id) {
+      return ApiResponse.unauthorized('Authentication required')
+    }
+
     const { id } = params
     
     if (!id) {
       return ApiResponse.badRequest("Event ID is required")
     }
 
-    const deleted = await EventService.deleteEvent(id, request.userId!)
+    const deleted = await EventService.deleteEvent(id, session.user.id)
     
     if (!deleted) {
       return ApiResponse.notFound("Event not found")
@@ -127,9 +147,4 @@ async function deleteEvent(request: AuthenticatedRequest, { params }: RouteParam
   }
 }
 
-// Apply middleware and export handlers
-const protectedRoute = createProtectedRoute({ requests: 100, window: 60 })
-
-export const GET = protectedRoute(getEvent)
-export const PUT = protectedRoute(updateEvent)
-export const DELETE = protectedRoute(deleteEvent)
+// Note: Authentication is handled within each function using getServerSession

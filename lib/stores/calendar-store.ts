@@ -147,16 +147,25 @@ export const useCalendarStore = create<CalendarState>()(
             });
             
             if (!response.ok) {
-              throw new Error('Failed to fetch events');
+              if (response.status === 401) {
+                // Redirect to login if unauthorized
+                window.location.href = '/auth/signin?callbackUrl=' + encodeURIComponent(window.location.pathname);
+                return;
+              }
+              const errorData = await response.json().catch(() => ({}));
+              throw new Error(errorData.message || 'Failed to fetch events');
             }
             
-            const data = await response.json();
+            const result = await response.json();
+            
+            // Handle the response structure from ApiResponse.success()
+            const eventsData = result.data?.events || result.events || [];
             
             // Convert date strings to Date objects
-            const events = data.events.map((event: any) => ({
+            const events = eventsData.map((event: any) => ({
               ...event,
-              startTime: new Date(event.startTime),
-              endTime: event.endTime ? new Date(event.endTime) : undefined,
+              startDate: new Date(event.startDate),
+              endDate: event.endDate ? new Date(event.endDate) : undefined,
               createdAt: new Date(event.createdAt),
               updatedAt: new Date(event.updatedAt),
             }));
@@ -183,7 +192,12 @@ export const useCalendarStore = create<CalendarState>()(
             });
             
             if (!response.ok) {
-              throw new Error('Failed to create event');
+              if (response.status === 401) {
+                window.location.href = '/auth/signin?callbackUrl=' + encodeURIComponent(window.location.pathname);
+                return;
+              }
+              const errorData = await response.json().catch(() => ({}));
+              throw new Error(errorData.message || 'Failed to create event');
             }
             
             const newEvent = await response.json();

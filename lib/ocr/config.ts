@@ -7,8 +7,8 @@ import { OCRConfig, PreprocessingOptions, KoreanTextNormalization, TextPatterns 
 
 export const DEFAULT_OCR_CONFIG: OCRConfig = {
   // Google Vision API settings
-  projectId: process.env.GOOGLE_CLOUD_PROJECT_ID,
-  keyFilename: process.env.GOOGLE_CLOUD_KEY_FILE,
+  projectId: process.env.GOOGLE_CLOUD_PROJECT || 'geulpi-prod',
+  keyFilename: process.env.GOOGLE_APPLICATION_CREDENTIALS || './google-cloud-key.json',
   
   // Processing options
   enablePreprocessing: true,

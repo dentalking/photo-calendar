@@ -22,13 +22,16 @@ export default async function SignInPage({ searchParams }: PageProps) {
   // Await searchParams as it's now a Promise in Next.js 15
   const params = await searchParams
   
-  // Redirect if already authenticated
-  const session = await getOptionalAuthSession()
-  if (session) {
-    const callbackUrl = params.callbackUrl && params.callbackUrl.startsWith('/') 
-      ? params.callbackUrl 
-      : '/calendar'
-    redirect(callbackUrl)
+  // Skip authentication check if force parameter is present (for development/testing)
+  if (!params.force) {
+    // Redirect if already authenticated
+    const session = await getOptionalAuthSession()
+    if (session) {
+      const callbackUrl = params.callbackUrl && params.callbackUrl.startsWith('/') 
+        ? params.callbackUrl 
+        : '/calendar'
+      redirect(callbackUrl)
+    }
   }
 
   return (

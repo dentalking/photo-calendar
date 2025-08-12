@@ -4,6 +4,7 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { SessionProvider } from "@/components/auth/session-provider";
 import { getOptionalAuthSession } from "@/lib/auth/helpers";
+import { ThemeProvider } from "@/components/theme/theme-provider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -20,6 +21,17 @@ export const metadata: Metadata = {
   description: "AI-powered photo to calendar event extraction application",
   keywords: ["photo", "calendar", "AI", "OCR", "event extraction"],
   authors: [{ name: "Photo Calendar Team" }],
+  icons: {
+    icon: [
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+      { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
+      { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
+    ],
+    apple: [
+      { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+    ],
+  },
+  manifest: '/manifest.json',
   robots: {
     index: true,
     follow: true,
@@ -79,10 +91,17 @@ export default async function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased h-full`}
       >
-        <SessionProvider session={session}>
-          {children}
-        </SessionProvider>
-        <Toaster />
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <SessionProvider session={session}>
+            {children}
+          </SessionProvider>
+          <Toaster />
+        </ThemeProvider>
       </body>
     </html>
   );

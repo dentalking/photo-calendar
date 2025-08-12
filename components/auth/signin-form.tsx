@@ -5,7 +5,7 @@ import { signIn } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Chrome, MessageCircle, Loader2, AlertCircle } from 'lucide-react'
+import { Chrome, Loader2, AlertCircle } from 'lucide-react'
 
 interface SignInFormProps {
   callbackUrl?: string
@@ -17,10 +17,8 @@ export function SignInForm({ callbackUrl, error }: SignInFormProps) {
   const searchParams = useSearchParams()
   const [isLoading, setIsLoading] = useState<{
     google: boolean
-    kakao: boolean
   }>({
     google: false,
-    kakao: false,
   })
 
   // Parse error from URL params or props
@@ -47,7 +45,7 @@ export function SignInForm({ callbackUrl, error }: SignInFormProps) {
     }
   }
 
-  const handleProviderSignIn = async (provider: 'google' | 'kakao') => {
+  const handleProviderSignIn = async (provider: 'google') => {
     try {
       setIsLoading(prev => ({ ...prev, [provider]: true }))
 
@@ -104,7 +102,7 @@ export function SignInForm({ callbackUrl, error }: SignInFormProps) {
           size="lg"
           className="w-full h-12 text-left justify-start gap-4 border-gray-300 hover:border-gray-400 hover:bg-gray-50"
           onClick={() => handleProviderSignIn('google')}
-          disabled={isLoading.google || isLoading.kakao}
+          disabled={isLoading.google}
         >
           {isLoading.google ? (
             <Loader2 className="h-5 w-5 animate-spin" />
@@ -113,24 +111,6 @@ export function SignInForm({ callbackUrl, error }: SignInFormProps) {
           )}
           <span className="flex-1">
             {isLoading.google ? 'Signing in with Google...' : 'Continue with Google'}
-          </span>
-        </Button>
-
-        <Button
-          type="button"
-          variant="outline"
-          size="lg"
-          className="w-full h-12 text-left justify-start gap-4 border-gray-300 hover:border-gray-400 hover:bg-gray-50"
-          onClick={() => handleProviderSignIn('kakao')}
-          disabled={isLoading.google || isLoading.kakao}
-        >
-          {isLoading.kakao ? (
-            <Loader2 className="h-5 w-5 animate-spin" />
-          ) : (
-            <MessageCircle className="h-5 w-5 text-[#fee500]" />
-          )}
-          <span className="flex-1">
-            {isLoading.kakao ? 'Signing in with Kakao...' : 'Continue with Kakao'}
           </span>
         </Button>
       </div>

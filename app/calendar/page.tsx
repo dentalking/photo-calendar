@@ -14,6 +14,20 @@ import { EventCard } from '@/components/ui/event-card';
 import { PhotoUpload } from '@/components/ui/photo-upload';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
+import toast, { Toaster } from 'react-hot-toast';
+
+// Helper function to get category color
+const getCategoryColor = (category: string): string => {
+  const colors: Record<string, string> = {
+    work: 'bg-blue-500',
+    personal: 'bg-green-500',
+    health: 'bg-red-500',
+    education: 'bg-purple-500',
+    social: 'bg-yellow-500',
+    other: 'bg-gray-500',
+  };
+  return colors[category] || 'bg-gray-500';
+};
 
 export default function CalendarPage() {
   const {
@@ -44,10 +58,53 @@ export default function CalendarPage() {
 
   const filteredEvents = getFilteredEvents();
 
-  const handlePhotoUpload = async (files: File[]) => {
+  const handlePhotoUpload = async (files: Array<{id: string; file: File; preview: string; error?: string}>) => {
     // This will be connected to the photo extraction API
-    console.log('Uploading photos:', files);
+    const actualFiles = files.map(f => f.file);
+    console.log('Uploading photos:', actualFiles);
+    
+    // TODO: Connect to the photo extraction API
+    // const formData = new FormData();
+    // actualFiles.forEach(file => formData.append('photos', file));
+    // await fetch('/api/photo/extract', { method: 'POST', body: formData });
+    
     closeCreateModal();
+  };
+
+  const handleGoogleCalendarSync = async () => {
+    try {
+      const response = await fetch('/api/calendar/sync', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'sync-all',
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast.success(`동기화 완료! ${data.summary.succeeded}개 성공, ${data.summary.failed}개 실패`, {
+          duration: 4000,
+          position: 'top-center',
+        });
+        // Refresh events after sync
+        fetchEvents();
+      } else {
+        toast.error(`동기화 실패: ${data.error || data.message}`, {
+          duration: 4000,
+          position: 'top-center',
+        });
+      }
+    } catch (error) {
+      console.error('Google Calendar sync error:', error);
+      toast.error('Google Calendar 동기화 중 오류가 발생했습니다.', {
+        duration: 4000,
+        position: 'top-center',
+      });
+    }
   };
 
   return (
@@ -93,6 +150,16 @@ export default function CalendarPage() {
                   <List className="h-4 w-4" />
                 </Button>
               </div>
+              
+              {/* Google Calendar Sync Button */}
+              <Button 
+                variant="outline" 
+                onClick={handleGoogleCalendarSync}
+                className="mr-2"
+              >
+                <Calendar className="h-4 w-4 mr-2" />
+                Google 동기화
+              </Button>
               
               {/* Add Event Button */}
               <Button onClick={() => openCreateModal()}>
@@ -192,15 +259,11 @@ export default function CalendarPage() {
             events={filteredEvents.map(event => ({
               id: event.id,
               title: event.title,
-              startTime: event.startTime,
-              endTime: event.endTime,
-              location: event.location,
-              description: event.description,
-              category: event.category as any,
-              color: event.color,
-              isAllDay: event.isAllDay,
-              confidence: event.confidence,
+              date: new Date(event.startTime),
+              photo: event.sourceImage,
+              color: getCategoryColor(event.category),
             }))}
+            selectedDate={currentDate}
             onDateSelect={(date) => {
               selectDate(date);
               openCreateModal(date);
@@ -233,14 +296,17 @@ export default function CalendarPage() {
                   event={{
                     id: event.id,
                     title: event.title,
-                    startTime: event.startTime,
-                    endTime: event.endTime,
+                    startDate: event.startTime,
+                    endDate: event.endTime,
                     location: event.location,
                     description: event.description,
-                    category: event.category as any,
-                    color: event.color,
+                    category: event.category,
+                    color: event.color || getCategoryColor(event.category),
                     isAllDay: event.isAllDay,
-                    confidence: event.confidence,
+                    status: 'CONFIRMED',
+                    confidenceScore: event.confidence || 1,
+                    isUserVerified: true,
+                    isVisible: true,
                   }}
                   variant="detailed"
                   onClick={() => openEventModal(event)}
@@ -264,7 +330,7 @@ export default function CalendarPage() {
               <PhotoUpload
                 onFilesChange={handlePhotoUpload}
                 maxFiles={1}
-                accept="image/*"
+                acceptedFileTypes={['image/jpeg', 'image/png', 'image/gif', 'image/webp']}
               />
             </div>
             
@@ -363,6 +429,30 @@ export default function CalendarPage() {
           </DialogContent>
         </Dialog>
       )}
+      <Toaster 
+        toastOptions={{
+          success: {
+            style: {
+              background: '#10B981',
+              color: 'white',
+            },
+            iconTheme: {
+              primary: 'white',
+              secondary: '#10B981',
+            },
+          },
+          error: {
+            style: {
+              background: '#EF4444',
+              color: 'white',
+            },
+            iconTheme: {
+              primary: 'white',
+              secondary: '#EF4444',
+            },
+          },
+        }}
+      />
     </div>
   );
 }

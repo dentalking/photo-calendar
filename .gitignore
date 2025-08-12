@@ -36,12 +36,20 @@ yarn-error.log*
 .env.development.local
 .env.test.local
 .env.production.local
+.env.production
+.env.secure
 !.env.example
 
 # Google Cloud credentials
 google-cloud-key.json
 *-key.json
 service-account-*.json
+
+# Sensitive scripts
+scripts/setup-vercel-env.sh
+scripts/fix-oauth.js
+!scripts/setup-vercel-env.sh.example
+!scripts/fix-oauth.js.example
 
 # vercel
 .vercel

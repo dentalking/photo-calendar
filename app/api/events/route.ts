@@ -1,14 +1,22 @@
-import { NextRequest } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
+import { getServerSession } from "next-auth/next"
+import { authOptions } from "@/lib/auth/auth-options"
 import { EventService } from "@/lib/services/event"
 import { createEventSchema, eventListQuerySchema } from "@/lib/validations/event"
-import { createProtectedRoute, AuthenticatedRequest, ApiResponse } from "@/lib/middleware/auth"
+import { ApiResponse } from "@/lib/middleware/auth"
 
 /**
  * GET /api/events
  * List events with filtering, pagination, and sorting
  */
-async function getEvents(request: AuthenticatedRequest) {
+export async function GET(request: NextRequest) {
   try {
+    // Check authentication
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.id) {
+      return ApiResponse.unauthorized('Authentication required')
+    }
+
     const { searchParams } = new URL(request.url)
     
     // Parse and validate query parameters
@@ -28,7 +36,7 @@ async function getEvents(request: AuthenticatedRequest) {
     }
 
     const query = eventListQuerySchema.parse(queryData)
-    const result = await EventService.getEvents(request.userId!, query)
+    const result = await EventService.getEvents(session.user.id, query)
 
     return ApiResponse.success({
       events: result.events,
@@ -52,15 +60,21 @@ async function getEvents(request: AuthenticatedRequest) {
  * POST /api/events
  * Create new event
  */
-async function createEvent(request: AuthenticatedRequest) {
+export async function POST(request: NextRequest) {
   try {
+    // Check authentication
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.id) {
+      return ApiResponse.unauthorized('Authentication required')
+    }
+
     const body = await request.json()
     const validatedData = createEventSchema.parse(body)
     
     // Check for event conflicts if requested
     if (body.checkConflicts) {
       const overlapCheck = await EventService.checkEventOverlap(
-        request.userId!,
+        session.user.id,
         validatedData.startDate,
         validatedData.endDate
       )
@@ -73,7 +87,7 @@ async function createEvent(request: AuthenticatedRequest) {
       }
     }
 
-    const event = await EventService.createEvent(request.userId!, validatedData)
+    const event = await EventService.createEvent(session.user.id, validatedData)
     
     return ApiResponse.created({
       event,
@@ -88,8 +102,4 @@ async function createEvent(request: AuthenticatedRequest) {
   }
 }
 
-// Apply middleware and export handlers
-const protectedRoute = createProtectedRoute({ requests: 100, window: 60 }) // 100 requests per minute
-
-export const GET = protectedRoute(getEvents)
-export const POST = protectedRoute(createEvent)
+// Note: Authentication is handled within each function using getServerSession

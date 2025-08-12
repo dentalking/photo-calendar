@@ -116,6 +116,10 @@ model Event {
   isUserVerified Boolean  @default(false) // User confirmed the event
   isVisible      Boolean  @default(true)   // User can hide events
   
+  // External calendar sync
+  googleEventId  String?  // Google Calendar event ID
+  syncedAt       DateTime? // Last sync timestamp
+  
   // Timestamps
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

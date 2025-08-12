@@ -134,16 +134,56 @@ export class EventService {
   }
 
   /**
-   * Create new event
+   * Create new event with optional Google Calendar sync
    */
-  static async createEvent(userId: string, data: CreateEventInput): Promise<Event> {
-    return await prisma.event.create({
+  static async createEvent(
+    userId: string, 
+    data: CreateEventInput,
+    syncToGoogle: boolean = false
+  ): Promise<Event> {
+    const event = await prisma.event.create({
       data: {
         ...data,
         userId,
         isUserVerified: true, // User-created events are automatically verified
       }
     })
+
+    // Optionally sync to Google Calendar
+    if (syncToGoogle) {
+      try {
+        const { GoogleCalendarService } = await import('./google-calendar')
+        const { getServerSession } = await import('next-auth/next')
+        const { authOptions } = await import('@/lib/auth/auth-options')
+        
+        const session = await getServerSession(authOptions)
+        
+        if (session?.accessToken) {
+          const calendarService = new GoogleCalendarService(
+            session.accessToken,
+            session.refreshToken
+          )
+          
+          const syncResult = await calendarService.createEvent(event)
+          
+          if (syncResult.success && syncResult.googleEventId) {
+            // Update event with Google Calendar ID
+            await prisma.event.update({
+              where: { id: event.id },
+              data: {
+                googleEventId: syncResult.googleEventId,
+                syncedAt: new Date()
+              }
+            })
+          }
+        }
+      } catch (error) {
+        console.error('Failed to sync event to Google Calendar:', error)
+        // Don't throw - allow event creation to succeed even if sync fails
+      }
+    }
+
+    return event
   }
 
   /**

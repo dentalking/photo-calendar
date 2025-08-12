@@ -1,0 +1,102 @@
+#!/usr/bin/env node
+
+// Example OAuth debugging script
+// Copy this to fix-oauth.js and use your actual credentials
+
+const { OAuth2Client } = require('google-auth-library');
+
+console.log('🔍 Google OAuth 설정 진단 시작...\n');
+
+// 환경 변수에서 읽기 (또는 기본값 사용)
+const CLIENT_ID = process.env.GOOGLE_CLIENT_ID || 'YOUR_CLIENT_ID_HERE';
+const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || 'YOUR_CLIENT_SECRET_HERE';
+
+console.log('📋 현재 OAuth 설정:');
+console.log('-------------------');
+console.log(`CLIENT_ID: ${CLIENT_ID}`);
+console.log(`CLIENT_SECRET: ${CLIENT_SECRET.substring(0, 10)}...`);
+
+// OAuth 클라이언트 테스트
+async function testOAuthClient() {
+  try {
+    const client = new OAuth2Client(
+      CLIENT_ID,
+      CLIENT_SECRET,
+      'https://photo-calendar.vercel.app/api/auth/callback/google'
+    );
+    
+    const authUrl = client.generateAuthUrl({
+      access_type: 'offline',
+      scope: [
+        'https://www.googleapis.com/auth/userinfo.profile',
+        'https://www.googleapis.com/auth/userinfo.email',
+        'https://www.googleapis.com/auth/calendar'
+      ]
+    });
+    
+    console.log('\n✅ OAuth 클라이언트 객체 생성 성공');
+    console.log('\n📝 생성된 인증 URL:');
+    console.log(authUrl);
+    
+    // URL에서 client_id 추출하여 확인
+    const urlParams = new URL(authUrl).searchParams;
+    const urlClientId = urlParams.get('client_id');
+    
+    if (urlClientId === CLIENT_ID) {
+      console.log('\n✅ Client ID가 URL에 올바르게 포함됨');
+    } else {
+      console.log('\n❌ Client ID 불일치!');
+      console.log(`   예상: ${CLIENT_ID}`);
+      console.log(`   실제: ${urlClientId}`);
+    }
+    
+  } catch (error) {
+    console.log('\n❌ OAuth 클라이언트 테스트 실패:', error.message);
+  }
+}
+
+// 새로운 OAuth 설정 생성 가이드
+function printSetupGuide() {
+  console.log('\n\n📚 Google OAuth 설정 가이드:');
+  console.log('================================\n');
+  
+  console.log('1. Google Cloud Console 접속:');
+  console.log('   https://console.cloud.google.com/apis/credentials\n');
+  
+  console.log('2. 새 OAuth 2.0 클라이언트 ID 만들기:');
+  console.log('   - "사용자 인증 정보 만들기" → "OAuth 클라이언트 ID" 클릭');
+  console.log('   - 애플리케이션 유형: "웹 애플리케이션"');
+  console.log('   - 이름: "Photo Calendar Vercel"\n');
+  
+  console.log('3. 승인된 리디렉션 URI 추가:');
+  console.log('   - https://photo-calendar.vercel.app/api/auth/callback/google');
+  console.log('   - http://localhost:3000/api/auth/callback/google (개발용)\n');
+  
+  console.log('4. 새로운 Client ID와 Secret 복사\n');
+  
+  console.log('5. Vercel에 환경 변수 업데이트:');
+  console.log('   ```bash');
+  console.log('   echo "새_CLIENT_ID" | vercel env add GOOGLE_CLIENT_ID production --force');
+  console.log('   echo "새_CLIENT_SECRET" | vercel env add GOOGLE_CLIENT_SECRET production --force');
+  console.log('   ```\n');
+  
+  console.log('6. 재배포:');
+  console.log('   ```bash');
+  console.log('   vercel --prod');
+  console.log('   ```');
+}
+
+// 실행
+testOAuthClient();
+printSetupGuide();
+
+console.log('\n\n💡 추가 디버깅 정보:');
+console.log('----------------------');
+console.log('NextAuth 디버그 모드 활성화하려면 환경 변수 추가:');
+console.log('NEXTAUTH_DEBUG=true');
+console.log('\n401 오류의 일반적인 원인:');
+console.log('1. Client ID가 존재하지 않거나 삭제됨');
+console.log('2. Client Secret이 일치하지 않음');
+console.log('3. 프로젝트가 비활성화되거나 결제 문제');
+console.log('4. OAuth 동의 화면이 구성되지 않음');
+console.log('5. 리다이렉트 URI가 등록되지 않음');

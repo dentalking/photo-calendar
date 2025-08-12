@@ -80,7 +80,7 @@ export const authOptions: NextAuthOptions = {
 
   // Secure session configuration
   session: {
-    strategy: "database",
+    strategy: "jwt", // Changed from "database" to "jwt" for simpler setup
     maxAge: 24 * 60 * 60, // 24 hours
     updateAge: 60 * 60, // Update every hour
   },
@@ -232,11 +232,15 @@ export const authOptions: NextAuthOptions = {
       }
     },
 
-    async session({ session, user }) {
+    async session({ session, token }) {
       try {
-        // Add user ID to session when using database strategy
-        if (session.user && user) {
-          session.user.id = user.id
+        // Add user ID to session when using JWT strategy
+        if (session.user && token) {
+          session.user.id = token.sub || ''
+          // Add provider info if available
+          if (token.provider) {
+            (session.user as any).provider = token.provider
+          }
         }
 
         return session
@@ -244,6 +248,15 @@ export const authOptions: NextAuthOptions = {
         console.error('Session callback error:', error)
         return session
       }
+    },
+    
+    async jwt({ token, user, account }) {
+      // Initial sign in
+      if (account && user) {
+        token.provider = account.provider
+        token.providerAccountId = account.providerAccountId
+      }
+      return token
     },
 
   },
