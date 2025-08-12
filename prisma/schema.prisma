@@ -58,6 +58,18 @@ model User {
   emailVerified DateTime?
   image         String?
   
+  // Onboarding and personalization
+  onboardingCompleted  Boolean  @default(false)
+  timezone             String   @default("Asia/Seoul")
+  language             String   @default("ko")
+  dateFormat           String   @default("YYYY-MM-DD")
+  timeFormat           String   @default("24h")
+  weekStart            Int      @default(1) // 1 = Monday, 0 = Sunday
+  defaultEventDuration Int      @default(60) // in minutes
+  defaultReminder      Int      @default(10) // minutes before event
+  enableNotifications  Boolean  @default(true)
+  calendarView         String   @default("month") // month, week, day
+  
   // Subscription and usage tracking
   subscriptionTier     SubscriptionTier @default(FREE)
   subscriptionId       String?

@@ -22,17 +22,8 @@ export default async function SignInPage({ searchParams }: PageProps) {
   // Await searchParams as it's now a Promise in Next.js 15
   const params = await searchParams
   
-  // Skip authentication check if force parameter is present (for development/testing)
-  if (!params.force) {
-    // Redirect if already authenticated
-    const session = await getOptionalAuthSession()
-    if (session) {
-      const callbackUrl = params.callbackUrl && params.callbackUrl.startsWith('/') 
-        ? params.callbackUrl 
-        : '/calendar'
-      redirect(callbackUrl)
-    }
-  }
+  // Remove automatic redirect to prevent redirect loops
+  // The middleware will handle authenticated users
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4 sm:px-6 lg:px-8">

@@ -5,6 +5,7 @@ declare module "next-auth" {
   interface Session {
     user: {
       id: string
+      onboardingCompleted?: boolean
     } & DefaultSession["user"]
     accessToken?: string
     refreshToken?: string
@@ -13,6 +14,7 @@ declare module "next-auth" {
 
   interface User {
     id: string
+    onboardingCompleted?: boolean
   }
 }
 
@@ -22,5 +24,6 @@ declare module "next-auth/jwt" {
     accessToken?: string
     refreshToken?: string
     expiresAt?: number
+    onboardingCompleted?: boolean
   }
 }

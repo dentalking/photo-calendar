@@ -22,7 +22,7 @@ export const authOptions: NextAuthOptions = {
     strategy: 'jwt',
   },
   callbacks: {
-    async jwt({ token, user, account }) {
+    async jwt({ token, user, account, trigger }) {
       if (user) {
         token.id = user.id
       }
@@ -31,11 +31,24 @@ export const authOptions: NextAuthOptions = {
         token.refreshToken = account.refresh_token
         token.expiresAt = account.expires_at
       }
+      
+      // Fetch onboarding status on every token refresh
+      if (token.email) {
+        const dbUser = await prisma.user.findUnique({
+          where: { email: token.email },
+          select: { onboardingCompleted: true },
+        })
+        if (dbUser) {
+          token.onboardingCompleted = dbUser.onboardingCompleted
+        }
+      }
+      
       return token
     },
     async session({ session, token }) {
       if (token && session.user) {
         session.user.id = token.id as string
+        session.user.onboardingCompleted = token.onboardingCompleted as boolean
         session.accessToken = token.accessToken as string
         session.refreshToken = token.refreshToken as string
         session.expiresAt = token.expiresAt as number
