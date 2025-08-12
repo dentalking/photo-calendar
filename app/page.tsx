@@ -11,15 +11,15 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
-              <Calendar className="h-8 w-8 text-blue-600" />
-              <span className="ml-2 text-xl font-bold">Photo Calendar</span>
+              <Calendar className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" aria-hidden="true" />
+              <span className="ml-2 text-lg sm:text-xl font-bold">Photo Calendar</span>
             </div>
-            <div className="flex items-center space-x-4">
-              <Link href="/auth/signin">
-                <Button variant="ghost">로그인</Button>
+            <div className="flex items-center space-x-2 sm:space-x-4">
+              <Link href="/auth/signin" aria-label="로그인 페이지로 이동">
+                <Button variant="ghost" className="text-sm sm:text-base px-2 sm:px-4">로그인</Button>
               </Link>
-              <Link href="/auth/signin">
-                <Button>시작하기</Button>
+              <Link href="/auth/signin" aria-label="회원가입 페이지로 이동">
+                <Button className="text-sm sm:text-base px-3 sm:px-4">시작하기</Button>
               </Link>
             </div>
           </div>
@@ -28,24 +28,24 @@ export default function HomePage() {
 
       {/* Hero Section */}
       <section className="relative overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 sm:pt-20 pb-12 sm:pb-16">
           <div className="text-center">
-            <h1 className="text-5xl md:text-6xl font-bold tracking-tight text-gray-900 dark:text-white">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-gray-900 dark:text-white">
               사진 한 장으로
-              <span className="block text-blue-600">일정 관리를 마법처럼</span>
+              <span className="block text-blue-600 mt-2">일정 관리를 마법처럼</span>
             </h1>
-            <p className="mt-6 text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
+            <p className="mt-4 sm:mt-6 text-base sm:text-lg md:text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto px-4">
               포스터, 초대장, 영수증을 사진으로 찍으면 AI가 자동으로 일정을 추출하여 
               캘린더에 등록합니다. 복잡한 설정 없이 바로 시작하세요.
             </p>
-            <div className="mt-10 flex justify-center space-x-4">
-              <Link href="/auth/signin">
-                <Button size="lg" className="px-8">
+            <div className="mt-8 sm:mt-10 flex flex-col sm:flex-row justify-center items-center space-y-3 sm:space-y-0 sm:space-x-4">
+              <Link href="/auth/signin" className="w-full sm:w-auto">
+                <Button size="lg" className="w-full sm:w-auto px-6 sm:px-8 h-12 sm:h-11 text-base sm:text-sm">
                   무료로 시작하기 <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </Link>
-              <Link href="#features">
-                <Button size="lg" variant="outline" className="px-8">
+              <Link href="#features" className="w-full sm:w-auto">
+                <Button size="lg" variant="outline" className="w-full sm:w-auto px-6 sm:px-8 h-12 sm:h-11 text-base sm:text-sm">
                   자세히 알아보기
                 </Button>
               </Link>
@@ -58,7 +58,7 @@ export default function HomePage() {
             <Card className="overflow-hidden shadow-2xl">
               <div className="aspect-video bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900 dark:to-purple-900 flex items-center justify-center">
                 <div className="text-center p-8">
-                  <Camera className="h-24 w-24 mx-auto text-blue-600 mb-4" />
+                  <Camera className="h-24 w-24 mx-auto text-blue-600 mb-4" aria-hidden="true" />
                   <p className="text-2xl font-semibold text-gray-800 dark:text-gray-200">
                     사진을 캘린더로 변환하는 마법
                   </p>
@@ -84,7 +84,7 @@ export default function HomePage() {
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             <Card className="p-6 hover:shadow-lg transition-shadow">
               <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center mb-4">
-                <Sparkles className="h-6 w-6 text-blue-600" />
+                <Sparkles className="h-6 w-6 text-blue-600" aria-hidden="true" />
               </div>
               <h3 className="text-xl font-semibold mb-2">AI 텍스트 인식</h3>
               <p className="text-gray-600 dark:text-gray-400">
@@ -94,7 +94,7 @@ export default function HomePage() {
 
             <Card className="p-6 hover:shadow-lg transition-shadow">
               <div className="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center mb-4">
-                <Zap className="h-6 w-6 text-green-600" />
+                <Zap className="h-6 w-6 text-green-600" aria-hidden="true" />
               </div>
               <h3 className="text-xl font-semibold mb-2">빠른 처리</h3>
               <p className="text-gray-600 dark:text-gray-400">
@@ -104,7 +104,7 @@ export default function HomePage() {
 
             <Card className="p-6 hover:shadow-lg transition-shadow">
               <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center mb-4">
-                <Calendar className="h-6 w-6 text-purple-600" />
+                <Calendar className="h-6 w-6 text-purple-600" aria-hidden="true" />
               </div>
               <h3 className="text-xl font-semibold mb-2">캘린더 연동</h3>
               <p className="text-gray-600 dark:text-gray-400">
@@ -114,7 +114,7 @@ export default function HomePage() {
 
             <Card className="p-6 hover:shadow-lg transition-shadow">
               <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900 rounded-lg flex items-center justify-center mb-4">
-                <Shield className="h-6 w-6 text-orange-600" />
+                <Shield className="h-6 w-6 text-orange-600" aria-hidden="true" />
               </div>
               <h3 className="text-xl font-semibold mb-2">보안 우선</h3>
               <p className="text-gray-600 dark:text-gray-400">
@@ -124,7 +124,7 @@ export default function HomePage() {
 
             <Card className="p-6 hover:shadow-lg transition-shadow">
               <div className="w-12 h-12 bg-pink-100 dark:bg-pink-900 rounded-lg flex items-center justify-center mb-4">
-                <Camera className="h-6 w-6 text-pink-600" />
+                <Camera className="h-6 w-6 text-pink-600" aria-hidden="true" />
               </div>
               <h3 className="text-xl font-semibold mb-2">다양한 포맷 지원</h3>
               <p className="text-gray-600 dark:text-gray-400">
@@ -134,7 +134,7 @@ export default function HomePage() {
 
             <Card className="p-6 hover:shadow-lg transition-shadow">
               <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-900 rounded-lg flex items-center justify-center mb-4">
-                <Clock className="h-6 w-6 text-indigo-600" />
+                <Clock className="h-6 w-6 text-indigo-600" aria-hidden="true" />
               </div>
               <h3 className="text-xl font-semibold mb-2">시간 절약</h3>
               <p className="text-gray-600 dark:text-gray-400">

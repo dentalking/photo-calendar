@@ -281,8 +281,8 @@ export const authOptions: NextAuthOptions = {
     },
   },
 
-  // Enable debug mode in development
-  debug: process.env.NODE_ENV === 'development',
+  // Debug mode disabled for production readiness
+  debug: false,
 
   // Security options
   useSecureCookies: process.env.NODE_ENV === 'production',
