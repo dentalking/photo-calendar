@@ -11,6 +11,48 @@ const nextConfig: NextConfig = {
     // Warning: This allows production builds to successfully complete even if
     // your project has type errors.
     ignoreBuildErrors: true
+  },
+  // Security headers for OAuth and iframe protection
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          {
+            key: 'X-Frame-Options',
+            value: 'SAMEORIGIN'
+          },
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff'
+          },
+          {
+            key: 'Referrer-Policy',
+            value: 'origin-when-cross-origin'
+          }
+        ]
+      },
+      {
+        // Allow OAuth providers to work properly
+        source: '/api/auth/:path*',
+        headers: [
+          {
+            key: 'X-Frame-Options',
+            value: 'DENY'
+          }
+        ]
+      }
+    ]
+  },
+  // Redirect configuration for OAuth
+  async redirects() {
+    return [
+      {
+        source: '/signin',
+        destination: '/auth/signin',
+        permanent: false,
+      },
+    ]
   }
 };
 

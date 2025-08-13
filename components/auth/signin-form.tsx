@@ -61,15 +61,24 @@ export function SignInForm({ callbackUrl, error }: SignInFormProps) {
         router.replace(newUrl.pathname + newUrl.search)
       }
 
+      console.log('Signing in with callbackUrl:', secureCallbackUrl)
+      
+      // Use redirect: false to handle redirect manually
       const result = await signIn(provider, {
         callbackUrl: secureCallbackUrl,
-        redirect: true,
+        redirect: false,
       })
 
-      // This code might not execute due to redirect, but keeping for completeness
+      console.log('Sign in result:', result)
+
       if (result?.error) {
         console.error(`${provider} sign in error:`, result.error)
-        // Error will be handled by the error page or URL params
+        // Handle error
+        router.push(`/auth/signin?error=${encodeURIComponent(result.error)}`)
+      } else if (result?.ok) {
+        console.log('Sign in successful, redirecting to:', secureCallbackUrl)
+        // Manual redirect after successful sign in
+        router.push(secureCallbackUrl)
       }
     } catch (error) {
       console.error(`${provider} sign in exception:`, error)

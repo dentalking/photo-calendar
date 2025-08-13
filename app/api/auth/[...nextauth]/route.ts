@@ -6,6 +6,21 @@ import { rateLimit } from '@/lib/auth/rate-limit'
 // Apply rate limiting to auth endpoints
 async function handler(request: NextRequest, context: any) {
   try {
+    // TEMPORARY: Rate limiting disabled for debugging
+    const authHandler = NextAuth(authOptions)
+    const response = await authHandler(request, context)
+
+    // Add security headers to the response
+    if (response instanceof NextResponse) {
+      response.headers.set('X-Content-Type-Options', 'nosniff')
+      response.headers.set('X-Frame-Options', 'DENY')
+      response.headers.set('X-XSS-Protection', '1; mode=block')
+      response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
+    }
+
+    return response
+    
+    /* RATE LIMITING TEMPORARILY DISABLED
     // Skip rate limiting in development
     if (process.env.NODE_ENV === 'development') {
       const authHandler = NextAuth(authOptions)
@@ -36,25 +51,7 @@ async function handler(request: NextRequest, context: any) {
         }
       )
     }
-
-    // Add security headers to all auth requests
-    const authHandler = NextAuth(authOptions)
-    const response = await authHandler(request, context)
-
-    // Add security headers to the response
-    if (response instanceof NextResponse) {
-      response.headers.set('X-Content-Type-Options', 'nosniff')
-      response.headers.set('X-Frame-Options', 'DENY')
-      response.headers.set('X-XSS-Protection', '1; mode=block')
-      response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
-      
-      // Add rate limit headers to successful responses
-      response.headers.set('X-RateLimit-Limit', limit.toString())
-      response.headers.set('X-RateLimit-Remaining', remaining.toString())
-      response.headers.set('X-RateLimit-Reset', new Date(reset).toISOString())
-    }
-
-    return response
+    */
   } catch (error) {
     console.error('NextAuth handler error:', error)
     

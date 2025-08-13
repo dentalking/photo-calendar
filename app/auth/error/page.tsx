@@ -35,12 +35,28 @@ function getErrorDetails(error?: string) {
         suggestion: 'Please request a new verification link.',
       }
     case 'OAuthSignin':
+      return {
+        title: 'OAuth Sign-in Error',
+        description: 'There was an error initiating OAuth sign-in with the provider. This could be due to configuration issues.',
+        suggestion: 'Please try again. If this persists, there may be a server configuration issue.',
+      }
     case 'OAuthCallback':
+      return {
+        title: 'OAuth Callback Error', 
+        description: 'There was an error processing the OAuth callback from the provider.',
+        suggestion: 'Please try signing in again. Check that popup blockers are disabled.',
+      }
     case 'OAuthCreateAccount':
       return {
-        title: 'OAuth Error',
-        description: 'There was an error with the OAuth provider during authentication.',
-        suggestion: 'Please try signing in again. If the problem persists, try a different provider.',
+        title: 'OAuth Account Creation Error',
+        description: 'There was an error creating your account via OAuth.',
+        suggestion: 'Please try signing in again or contact support if the problem persists.',
+      }
+    case 'google':
+      return {
+        title: 'Google OAuth Error',
+        description: 'There was a specific error with Google OAuth authentication. This may indicate a configuration issue.',
+        suggestion: 'Please try again. If this persists, check that third-party cookies are enabled and popup blockers are disabled.',
       }
     case 'OAuthAccountNotLinked':
       return {

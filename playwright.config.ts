@@ -1,4 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
+import path from 'path';
 
 export default defineConfig({
   // 테스트 파일 위치
@@ -21,13 +22,14 @@ export default defineConfig({
   // 리포터 설정
   reporter: [
     ['html', { open: 'never' }],
-    ['list']
+    ['list'],
+    ['json', { outputFile: 'test-results/results.json' }]
   ],
   
   // 공통 설정
   use: {
-    // 기본 URL
-    baseURL: 'http://localhost:3004',
+    // 기본 URL - 환경변수 우선 사용
+    baseURL: process.env.BASE_URL || 'http://localhost:3004',
     
     // 트레이스 수집 (실패 시에만)
     trace: 'on-first-retry',
@@ -47,6 +49,34 @@ export default defineConfig({
 
   // 브라우저 프로젝트 설정
   projects: [
+    // 인증 설정 프로젝트
+    { 
+      name: 'setup', 
+      testMatch: /.*\.setup\.ts/,
+    },
+    
+    // 인증이 필요없는 테스트
+    {
+      name: 'chromium-no-auth',
+      use: { 
+        ...devices['Desktop Chrome'],
+        storageState: { cookies: [], origins: [] },
+      },
+      testIgnore: ['**/*authenticated*.spec.ts', '**/*dashboard*.spec.ts', '**/*calendar*.spec.ts'],
+    },
+    
+    // 인증이 필요한 테스트
+    {
+      name: 'chromium-auth',
+      use: { 
+        ...devices['Desktop Chrome'],
+        storageState: path.join(__dirname, 'playwright/.auth/user.json'),
+      },
+      dependencies: ['setup'],
+      testMatch: ['**/*authenticated*.spec.ts', '**/*dashboard*.spec.ts', '**/*calendar*.spec.ts'],
+    },
+    
+    // 기본 브라우저 테스트
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
@@ -77,4 +107,7 @@ export default defineConfig({
     reuseExistingServer: !process.env.CI,
     timeout: 120 * 1000,
   },
+  
+  // 테스트 결과 출력 폴더
+  outputDir: 'test-results/',
 });

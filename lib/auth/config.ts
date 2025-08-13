@@ -57,6 +57,9 @@ export const authOptions: NextAuthOptions = {
   // Use Prisma adapter for database integration
   adapter: PrismaAdapter(prisma) as Adapter,
   
+  // Debug logging for OAuth issues
+  debug: process.env.NODE_ENV === 'development',
+  
   // Configure OAuth providers
   providers: [
     GoogleProvider({
@@ -70,6 +73,10 @@ export const authOptions: NextAuthOptions = {
           scope: "openid email profile",
         },
       },
+      // Explicitly set the correct redirect URI
+      httpOptions: {
+        timeout: 10000,
+      },
     }),
     // KakaoProvider will be added when configured
     // KakaoProvider({
@@ -80,118 +87,16 @@ export const authOptions: NextAuthOptions = {
 
   // Secure session configuration
   session: {
-    strategy: "jwt", // Changed from "database" to "jwt" for simpler setup
-    maxAge: 24 * 60 * 60, // 24 hours
-    updateAge: 60 * 60, // Update every hour
+    strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60, // 30 days
+    updateAge: 24 * 60 * 60, // Update every day
   },
 
-  // JWT configuration with encryption
+  // JWT configuration - use default NextAuth JWT handling
   jwt: {
-    secret: process.env.NEXTAUTH_SECRET!,
-    maxAge: 24 * 60 * 60, // 24 hours
-    // Use HS256 for better compatibility and security
-    encode: async ({ secret, token }) => {
-      const { SignJWT } = await import('jose')
-      const alg = 'HS256'
-      
-      return await new SignJWT(token as any)
-        .setProtectedHeader({ alg })
-        .setIssuedAt()
-        .setExpirationTime('24h')
-        .sign(new TextEncoder().encode(secret))
-    },
-    decode: async ({ secret, token }) => {
-      if (!token) return null
-      
-      try {
-        const { jwtVerify } = await import('jose')
-        const { payload } = await jwtVerify(
-          token,
-          new TextEncoder().encode(secret)
-        )
-        return payload
-      } catch (error) {
-        console.error('JWT decode error:', error)
-        return null
-      }
-    },
+    maxAge: 30 * 24 * 60 * 60, // 30 days
   },
 
-  // Secure cookie configuration
-  cookies: {
-    sessionToken: {
-      name: process.env.NODE_ENV === 'production' 
-        ? '__Secure-next-auth.session-token' 
-        : 'next-auth.session-token',
-      options: {
-        httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: 24 * 60 * 60, // 24 hours
-      },
-    },
-    callbackUrl: {
-      name: process.env.NODE_ENV === 'production' 
-        ? '__Secure-next-auth.callback-url' 
-        : 'next-auth.callback-url',
-      options: {
-        httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: 24 * 60 * 60,
-      },
-    },
-    csrfToken: {
-      name: process.env.NODE_ENV === 'production' 
-        ? '__Host-next-auth.csrf-token' 
-        : 'next-auth.csrf-token',
-      options: {
-        httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: 24 * 60 * 60,
-      },
-    },
-    pkceCodeVerifier: {
-      name: process.env.NODE_ENV === 'production' 
-        ? '__Secure-next-auth.pkce.code_verifier' 
-        : 'next-auth.pkce.code_verifier',
-      options: {
-        httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: 15 * 60, // 15 minutes
-      },
-    },
-    state: {
-      name: process.env.NODE_ENV === 'production' 
-        ? '__Secure-next-auth.state' 
-        : 'next-auth.state',
-      options: {
-        httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: 15 * 60, // 15 minutes
-      },
-    },
-    nonce: {
-      name: process.env.NODE_ENV === 'production' 
-        ? '__Secure-next-auth.nonce' 
-        : 'next-auth.nonce',
-      options: {
-        httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: 15 * 60, // 15 minutes
-      },
-    },
-  },
 
   // Custom pages
   pages: {
@@ -232,17 +137,62 @@ export const authOptions: NextAuthOptions = {
       }
     },
 
+    async redirect({ url, baseUrl }) {
+      console.log('NextAuth redirect callback:', { url, baseUrl })
+      
+      // If URL is relative, convert to absolute
+      if (url.startsWith("/")) {
+        const redirectUrl = `${baseUrl}${url}`
+        console.log('Redirecting to relative URL:', redirectUrl)
+        return redirectUrl
+      }
+      
+      // If URL is on the same origin, allow it
+      try {
+        const urlObj = new URL(url)
+        const baseUrlObj = new URL(baseUrl)
+        
+        if (urlObj.origin === baseUrlObj.origin) {
+          console.log('Redirecting to same origin URL:', url)
+          return url
+        }
+      } catch (e) {
+        console.error('Invalid URL in redirect:', e)
+      }
+      
+      // Default redirect to dashboard
+      const defaultRedirect = `${baseUrl}/dashboard`
+      console.log('Default redirect to dashboard:', defaultRedirect)
+      return defaultRedirect
+    },
+
     async session({ session, token }) {
+      console.log('Session callback:', { 
+        hasSession: !!session, 
+        hasToken: !!token,
+        tokenSub: token?.sub,
+        sessionUser: session?.user?.email 
+      })
+      
       try {
         // Add user ID to session when using JWT strategy
         if (session.user && token) {
-          session.user.id = token.sub || ''
+          session.user.id = token.sub || token.id || ''
+          session.user.email = token.email || session.user.email
+          session.user.name = token.name || session.user.name
+          session.user.image = token.picture || session.user.image
+          
           // Add provider info if available
           if (token.provider) {
             (session.user as any).provider = token.provider
           }
         }
 
+        console.log('Final session:', { 
+          userId: session?.user?.id,
+          userEmail: session?.user?.email 
+        })
+        
         return session
       } catch (error) {
         console.error('Session callback error:', error)
@@ -250,12 +200,25 @@ export const authOptions: NextAuthOptions = {
       }
     },
     
-    async jwt({ token, user, account }) {
+    async jwt({ token, user, account, trigger }) {
+      console.log('JWT callback:', { 
+        trigger, 
+        hasUser: !!user, 
+        hasAccount: !!account,
+        tokenSub: token?.sub 
+      })
+      
       // Initial sign in
       if (account && user) {
+        console.log('Initial sign in - setting token data')
+        token.id = user.id
+        token.email = user.email
+        token.name = user.name
+        token.picture = user.image
         token.provider = account.provider
         token.providerAccountId = account.providerAccountId
       }
+      
       return token
     },
 
@@ -281,11 +244,29 @@ export const authOptions: NextAuthOptions = {
     },
   },
 
-  // Debug mode disabled for production readiness
-  debug: false,
+  // Enable debug mode only in development
+  debug: process.env.NODE_ENV === 'development',
+  
+  // Custom logger to capture OAuth errors
+  logger: {
+    error: (code, metadata) => {
+      console.error(`NextAuth Error [${code}]:`, {
+        code,
+        metadata,
+        timestamp: new Date().toISOString(),
+        environment: process.env.NODE_ENV,
+        nextAuthUrl: process.env.NEXTAUTH_URL,
+        hasGoogleCreds: !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET)
+      })
+    },
+    warn: (code) => console.warn(`NextAuth Warning [${code}]`),
+    debug: (code, metadata) => {
+      if (process.env.NODE_ENV === 'development') {
+        console.debug(`NextAuth Debug [${code}]:`, metadata)
+      }
+    },
+  },
 
-  // Security options
-  useSecureCookies: process.env.NODE_ENV === 'production',
   
   // Theme configuration
   theme: {

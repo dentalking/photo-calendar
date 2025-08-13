@@ -1,6 +1,4 @@
 import { Suspense } from 'react'
-import { redirect } from 'next/navigation'
-import { getOptionalAuthSession } from '@/lib/auth/helpers'
 import { SignInForm } from '@/components/auth/signin-form'
 
 import { Metadata } from 'next'

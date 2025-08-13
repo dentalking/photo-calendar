@@ -37,6 +37,7 @@ yarn-error.log*
 .env.test.local
 .env.production.local
 .env.production
+.env.production.test
 .env.secure
 .env.check
 .env.production.check
@@ -52,6 +53,7 @@ service-account-*.json
 # Sensitive scripts
 scripts/setup-vercel-env.sh
 scripts/fix-oauth.js
+scripts/fix-env-variables.sh
 !scripts/setup-vercel-env.sh.example
 !scripts/fix-oauth.js.example
 

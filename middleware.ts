@@ -26,7 +26,13 @@ export async function middleware(request: NextRequest) {
   // Check for authentication
   const token = await getToken({ 
     req: request,
-    secret: process.env.NEXTAUTH_SECRET 
+    secret: process.env.NEXTAUTH_SECRET,
+  })
+  
+  console.log('Middleware check:', {
+    pathname,
+    hasToken: !!token,
+    tokenData: token ? { sub: token.sub, email: token.email } : null,
   })
   
   // Protected paths
@@ -37,6 +43,7 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/onboarding')
   
   if (isProtectedPath && !token) {
+    console.log('No token for protected path, redirecting to signin')
     // Redirect to sign in if not authenticated
     const signInUrl = new URL('/auth/signin', request.url)
     signInUrl.searchParams.set('callbackUrl', pathname)
@@ -44,15 +51,16 @@ export async function middleware(request: NextRequest) {
   }
   
   // Check if user needs onboarding
-  if (token && !pathname.startsWith('/onboarding')) {
-    // We'll check onboarding status from the token/session
-    // For now, let's assume new users need onboarding
-    const needsOnboarding = !token.onboardingCompleted
+  // TEMPORARY: Disabled onboarding redirect for debugging
+  // if (token && !pathname.startsWith('/onboarding')) {
+  //   // We'll check onboarding status from the token/session
+  //   // For now, let's assume new users need onboarding
+  //   const needsOnboarding = !token.onboardingCompleted
     
-    if (needsOnboarding && isProtectedPath && pathname !== '/onboarding') {
-      return NextResponse.redirect(new URL('/onboarding', request.url))
-    }
-  }
+  //   if (needsOnboarding && isProtectedPath && pathname !== '/onboarding') {
+  //     return NextResponse.redirect(new URL('/onboarding', request.url))
+  //   }
+  // }
   
   return NextResponse.next()
 }
