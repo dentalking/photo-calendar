@@ -38,10 +38,14 @@ yarn-error.log*
 .env.production.local
 .env.production
 .env.secure
+.env.check
+.env.production.check
+.env.vercel
 !.env.example
 
 # Google Cloud credentials
 google-cloud-key.json
+google-cloud-key-*.json
 *-key.json
 service-account-*.json
 
@@ -54,6 +58,13 @@ scripts/fix-oauth.js
 # vercel
 .vercel
 
+# backup files
+*.backup
+docker-compose.yml.backup
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Project documentation with sensitive info
+CLAUDE.md

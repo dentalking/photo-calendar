@@ -59,15 +59,64 @@ export default function CalendarPage() {
   const filteredEvents = getFilteredEvents();
 
   const handlePhotoUpload = async (files: Array<{id: string; file: File; preview: string; error?: string}>) => {
-    // This will be connected to the photo extraction API
-    const actualFiles = files.map(f => f.file);
-    console.log('Uploading photos:', actualFiles);
+    const actualFiles = files.filter(f => !f.error).map(f => f.file);
     
-    // TODO: Connect to the photo extraction API
-    // const formData = new FormData();
-    // actualFiles.forEach(file => formData.append('photos', file));
-    // await fetch('/api/photo/extract', { method: 'POST', body: formData });
+    if (actualFiles.length === 0) {
+      toast.error('업로드할 수 있는 파일이 없습니다');
+      return;
+    }
     
+    // Process each file
+    for (const file of actualFiles) {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('options', JSON.stringify({
+        extractEvents: true,
+        autoConfirm: false,
+        minConfidence: 0.7,
+        defaultCategory: 'other',
+        defaultColor: '#3B82F6'
+      }));
+      
+      toast.loading(`${file.name} 처리 중...`, { id: file.name });
+      
+      try {
+        const response = await fetch('/api/photo/extract', {
+          method: 'POST',
+          body: formData,
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          if (data.eventsCreated > 0) {
+            toast.success(
+              `${file.name}: ${data.eventsCreated}개 일정 추출 완료!`, 
+              { id: file.name, duration: 3000 }
+            );
+          } else {
+            toast.info(
+              `${file.name}: 일정을 찾을 수 없습니다`, 
+              { id: file.name, duration: 3000 }
+            );
+          }
+        } else {
+          toast.error(
+            `${file.name}: ${data.error || '처리 실패'}`, 
+            { id: file.name, duration: 4000 }
+          );
+        }
+      } catch (error) {
+        console.error('Photo upload error:', error);
+        toast.error(
+          `${file.name}: 업로드 중 오류 발생`, 
+          { id: file.name, duration: 4000 }
+        );
+      }
+    }
+    
+    // Refresh events after all uploads complete
+    await fetchEvents();
     closeCreateModal();
   };
 

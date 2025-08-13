@@ -433,6 +433,37 @@ export class AIAnalysisService {
   private delay(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
+
+  /**
+   * Extract events from text (wrapper for analyzeText for compatibility)
+   */
+  async extractEventsFromText(
+    text: string,
+    options: {
+      minConfidence?: number;
+      defaultCategory?: string;
+      context?: any;
+    } = {}
+  ): Promise<any> {
+    const result = await this.analyzeText(text, {
+      useCache: true,
+      autoRefine: true,
+      currentDate: new Date().toISOString(),
+      timezone: 'Asia/Seoul',
+      language: 'ko',
+      ...options,
+    });
+
+    // Format response to match expected structure
+    return {
+      events: result.events.filter(e => 
+        e.confidence >= (options.minConfidence || 0.7)
+      ),
+      averageConfidence: result.confidence,
+      model: result.metadata.model,
+      metadata: result.metadata,
+    };
+  }
 }
 
 // Export singleton instance
