@@ -18,6 +18,11 @@ export async function middleware(request: NextRequest) {
     pathname === path || pathname.startsWith('/api/auth/')
   )
   
+  // Skip middleware for all API routes - let them handle their own auth
+  if (pathname.startsWith('/api/')) {
+    return NextResponse.next()
+  }
+  
   // If it's a public path, continue
   if (isPublicPath) {
     return NextResponse.next()
