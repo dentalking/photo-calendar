@@ -70,7 +70,7 @@ export const authOptions: NextAuthOptions = {
           prompt: "consent",
           access_type: "offline",
           response_type: "code",
-          scope: "openid email profile",
+          scope: "openid email profile https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/calendar.events",
         },
       },
       // Explicitly set the correct redirect URI
@@ -171,7 +171,9 @@ export const authOptions: NextAuthOptions = {
         hasSession: !!session, 
         hasToken: !!token,
         tokenSub: token?.sub,
-        sessionUser: session?.user?.email 
+        sessionUser: session?.user?.email,
+        hasAccessToken: !!token?.accessToken,
+        hasRefreshToken: !!token?.refreshToken
       })
       
       try {
@@ -186,11 +188,20 @@ export const authOptions: NextAuthOptions = {
           if (token.provider) {
             (session.user as any).provider = token.provider
           }
+          
+          // Add OAuth tokens to session for API access
+          (session as any).accessToken = token.accessToken
+          (session as any).refreshToken = token.refreshToken
+          (session as any).expiresAt = token.expiresAt
+          (session as any).scope = token.scope
         }
 
         console.log('Final session:', { 
           userId: session?.user?.id,
-          userEmail: session?.user?.email 
+          userEmail: session?.user?.email,
+          hasAccessToken: !!(session as any).accessToken,
+          hasRefreshToken: !!(session as any).refreshToken,
+          scope: (session as any).scope
         })
         
         return session
@@ -205,7 +216,10 @@ export const authOptions: NextAuthOptions = {
         trigger, 
         hasUser: !!user, 
         hasAccount: !!account,
-        tokenSub: token?.sub 
+        tokenSub: token?.sub,
+        hasAccessToken: !!account?.access_token,
+        hasRefreshToken: !!account?.refresh_token,
+        scope: account?.scope
       })
       
       // Initial sign in
@@ -217,6 +231,12 @@ export const authOptions: NextAuthOptions = {
         token.picture = user.image
         token.provider = account.provider
         token.providerAccountId = account.providerAccountId
+        
+        // Store OAuth tokens for Google Calendar API access
+        token.accessToken = account.access_token
+        token.refreshToken = account.refresh_token
+        token.expiresAt = account.expires_at
+        token.scope = account.scope
       }
       
       return token
