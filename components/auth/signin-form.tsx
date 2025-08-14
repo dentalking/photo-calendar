@@ -63,10 +63,10 @@ export function SignInForm({ callbackUrl, error }: SignInFormProps) {
 
       console.log('Signing in with callbackUrl:', secureCallbackUrl)
       
-      // Use redirect: false to handle redirect manually
+      // Use redirect: true to properly handle OAuth flow
       const result = await signIn(provider, {
         callbackUrl: secureCallbackUrl,
-        redirect: false,
+        redirect: true,
       })
 
       console.log('Sign in result:', result)
