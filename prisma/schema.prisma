@@ -81,6 +81,9 @@ model User {
   monthlyPhotoCount    Int      @default(0)
   lastPhotoUpload      DateTime?
   
+  // Calendar sync
+  lastCalendarSync     DateTime? // Last time calendar was synced
+  
   // Timestamps
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -131,6 +134,7 @@ model Event {
   // External calendar sync
   googleEventId  String?  // Google Calendar event ID
   syncedAt       DateTime? // Last sync timestamp
+  metadata       Json?     // Store original Google Calendar data
   
   // Timestamps
   createdAt DateTime @default(now())
