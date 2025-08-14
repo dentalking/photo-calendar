@@ -14,6 +14,7 @@ export const authOptions: NextAuthOptions = {
           scope: 'openid email profile https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/calendar.events',
           access_type: 'offline',
           prompt: 'consent',
+          response_type: 'code',
         }
       }
     }),
@@ -23,25 +24,42 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async jwt({ token, user, account, trigger }) {
-      if (user) {
-        token.id = user.id
-      }
-      if (account) {
-        token.accessToken = account.access_token
-        token.refreshToken = account.refresh_token
-        token.expiresAt = account.expires_at
-      }
-      
-      // Fetch onboarding status on every token refresh
-      if (token.email) {
-        const dbUser = await prisma.user.findUnique({
-          where: { email: token.email },
-          select: { onboardingCompleted: true },
-        })
-        if (dbUser) {
-          token.onboardingCompleted = dbUser.onboardingCompleted
+      // Initial sign in
+      if (account && user) {
+        console.log('[JWT Callback] Initial sign in, account:', {
+          provider: account.provider,
+          access_token: !!account.access_token,
+          refresh_token: !!account.refresh_token,
+          scope: account.scope,
+        });
+        
+        return {
+          ...token,
+          id: user.id,
+          accessToken: account.access_token,
+          refreshToken: account.refresh_token,
+          expiresAt: account.expires_at,
         }
       }
+      
+      // Return previous token if the access token has not expired yet
+      if (Date.now() < (token.expiresAt as number) * 1000) {
+        // Fetch onboarding status on every token refresh
+        if (token.email) {
+          const dbUser = await prisma.user.findUnique({
+            where: { email: token.email },
+            select: { onboardingCompleted: true },
+          })
+          if (dbUser) {
+            token.onboardingCompleted = dbUser.onboardingCompleted
+          }
+        }
+        return token
+      }
+      
+      // Access token has expired, try to update it
+      console.log('[JWT Callback] Token expired, attempting refresh');
+      // TODO: Implement token refresh logic here
       
       return token
     },
