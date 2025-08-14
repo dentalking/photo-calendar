@@ -38,7 +38,7 @@ interface CalendarState {
   currentView: ViewType;
   currentDate: Date;
   selectedDate: Date | null;
-  selectedEvent: CalendarEvent | null;
+  selectedEvent: any | null;
   
   // Events
   events: CalendarEvent[];
@@ -52,6 +52,7 @@ interface CalendarState {
   // UI state
   isEventModalOpen: boolean;
   isCreateModalOpen: boolean;
+  showEventModal: boolean;
   isDragging: boolean;
   draggedEvent: CalendarEvent | undefined;
   setDraggedEvent: (event: CalendarEvent | undefined) => void;
@@ -76,12 +77,13 @@ interface CalendarState {
   searchEvents: (query: string) => void;
   
   // UI actions
-  openEventModal: (event?: CalendarEvent) => void;
+  openEventModal: (event?: any) => void;
   closeEventModal: () => void;
   openCreateModal: (date?: Date) => void;
   closeCreateModal: () => void;
   startDragging: (event: CalendarEvent) => void;
   stopDragging: () => void;
+  duplicateEvent: (eventId: string) => void;
   
   // Utility
   getEventsForDate: (date: Date) => any[];
@@ -111,6 +113,7 @@ export const useCalendarStore = create<CalendarState>()(
         filters: initialFilters,
         isEventModalOpen: false,
         isCreateModalOpen: false,
+        showEventModal: false,
         isDragging: false,
         draggedEvent: undefined,
         setDraggedEvent: (event) => set({ draggedEvent: event }),
@@ -351,15 +354,29 @@ export const useCalendarStore = create<CalendarState>()(
 
         // UI actions
         openEventModal: (event) => {
+          const convertedEvent = event ? {
+            ...event,
+            startDate: event.startDate || event.startTime,
+            endDate: event.endDate || event.endTime,
+            status: event.status || (event.confidence && event.confidence >= 0.8 ? 'CONFIRMED' : 'PENDING'),
+            confidenceScore: event.confidenceScore || event.confidence || 1,
+            createdAt: event.createdAt || new Date(),
+            updatedAt: event.updatedAt || new Date(),
+            isVisible: event.isVisible !== undefined ? event.isVisible : true,
+            isUserVerified: event.isUserVerified || false,
+          } : null;
+          
           set({ 
             isEventModalOpen: true,
-            selectedEvent: event || null,
+            showEventModal: true,
+            selectedEvent: convertedEvent,
           });
         },
         
         closeEventModal: () => {
           set({ 
             isEventModalOpen: false,
+            showEventModal: false,
             selectedEvent: null,
           });
         },
@@ -381,6 +398,25 @@ export const useCalendarStore = create<CalendarState>()(
         
         stopDragging: () => {
           set({ isDragging: false, draggedEvent: undefined });
+        },
+        
+        duplicateEvent: (eventId) => {
+          const { events } = get();
+          const eventToDuplicate = events.find(e => e.id === eventId);
+          
+          if (eventToDuplicate) {
+            const newEvent = {
+              ...eventToDuplicate,
+              id: `${eventId}-copy-${Date.now()}`,
+              title: `${eventToDuplicate.title} (복사본)`,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            };
+            
+            set((state) => ({
+              events: [...state.events, newEvent],
+            }));
+          }
         },
 
         // Utility functions

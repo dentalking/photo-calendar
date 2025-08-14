@@ -6,6 +6,7 @@ import { ko } from 'date-fns/locale';
 import { Calendar, ChevronLeft, ChevronRight, Plus, Search, Filter, Grid3x3, List, CalendarDays } from 'lucide-react';
 import { useCalendarStore } from '@/lib/stores/calendar-store';
 import { CalendarView } from '@/components/calendar/calendar-view';
+import { EventModal } from '@/components/calendar/event-modal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -37,8 +38,6 @@ export default function CalendarPage() {
     loading,
     filters,
     isCreateModalOpen,
-    selectedEvent,
-    isEventModalOpen,
     setView,
     navigateMonth,
     fetchEvents,
@@ -47,7 +46,6 @@ export default function CalendarPage() {
     openCreateModal,
     closeCreateModal,
     openEventModal,
-    closeEventModal,
     selectDate,
     getFilteredEvents,
   } = useCalendarStore();
@@ -425,66 +423,7 @@ export default function CalendarPage() {
       </Dialog>
 
       {/* Event Details Modal */}
-      {selectedEvent && (
-        <Dialog open={isEventModalOpen} onOpenChange={closeEventModal}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{selectedEvent.title}</DialogTitle>
-            </DialogHeader>
-            
-            <div className="space-y-4">
-              <div>
-                <p className="text-sm text-gray-500">시간</p>
-                <p className="font-medium">
-                  {format(selectedEvent.startTime, 'PPP p', { locale: ko })}
-                  {selectedEvent.endTime && (
-                    <> ~ {format(selectedEvent.endTime, 'p', { locale: ko })}</>
-                  )}
-                </p>
-              </div>
-              
-              {selectedEvent.location && (
-                <div>
-                  <p className="text-sm text-gray-500">위치</p>
-                  <p className="font-medium">{selectedEvent.location}</p>
-                </div>
-              )}
-              
-              {selectedEvent.description && (
-                <div>
-                  <p className="text-sm text-gray-500">설명</p>
-                  <p className="font-medium">{selectedEvent.description}</p>
-                </div>
-              )}
-              
-              {selectedEvent.confidence && (
-                <div>
-                  <p className="text-sm text-gray-500">AI 신뢰도</p>
-                  <div className="flex items-center space-x-2">
-                    <div className="flex-1 bg-gray-200 rounded-full h-2">
-                      <div
-                        className="bg-blue-600 h-2 rounded-full"
-                        style={{ width: `${selectedEvent.confidence * 100}%` }}
-                      />
-                    </div>
-                    <span className="text-sm font-medium">
-                      {Math.round(selectedEvent.confidence * 100)}%
-                    </span>
-                  </div>
-                </div>
-              )}
-              
-              <div className="flex justify-end space-x-2 pt-4">
-                <Button variant="outline" onClick={closeEventModal}>
-                  닫기
-                </Button>
-                <Button variant="outline">수정</Button>
-                <Button variant="destructive">삭제</Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
+      <EventModal />
       <Toaster 
         toastOptions={{
           success: {
