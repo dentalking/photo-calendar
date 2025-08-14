@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { Calendar, ChevronLeft, ChevronRight, Plus, Search, Filter, Grid3x3, List, CalendarDays } from 'lucide-react';
@@ -16,6 +16,7 @@ import { PhotoUpload } from '@/components/ui/photo-upload';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import toast, { Toaster } from 'react-hot-toast';
+import { SyncProgress } from '@/components/calendar/sync-progress';
 
 // Helper function to get category color
 const getCategoryColor = (category: string): string => {
@@ -31,6 +32,8 @@ const getCategoryColor = (category: string): string => {
 };
 
 export default function CalendarPage() {
+  const [showSyncProgress, setShowSyncProgress] = useState(false);
+  
   const {
     currentView,
     currentDate,
@@ -125,40 +128,14 @@ export default function CalendarPage() {
     closeCreateModal();
   };
 
-  const handleGoogleCalendarSync = async () => {
-    try {
-      const response = await fetch('/api/calendar/sync', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          action: 'sync-all',
-        }),
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        toast.success(`동기화 완료! ${data.summary.succeeded}개 성공, ${data.summary.failed}개 실패`, {
-          duration: 4000,
-          position: 'top-center',
-        });
-        // Refresh events after sync
-        fetchEvents();
-      } else {
-        toast.error(`동기화 실패: ${data.error || data.message}`, {
-          duration: 4000,
-          position: 'top-center',
-        });
-      }
-    } catch (error) {
-      console.error('Google Calendar sync error:', error);
-      toast.error('Google Calendar 동기화 중 오류가 발생했습니다.', {
-        duration: 4000,
-        position: 'top-center',
-      });
-    }
+  const handleGoogleCalendarSync = () => {
+    setShowSyncProgress(true);
+  };
+  
+  const handleSyncClose = () => {
+    setShowSyncProgress(false);
+    // Refresh events after sync
+    fetchEvents();
   };
 
   return (
@@ -424,6 +401,13 @@ export default function CalendarPage() {
 
       {/* Event Details Modal */}
       <EventModal />
+      
+      {/* Google Calendar Sync Progress */}
+      <SyncProgress 
+        isVisible={showSyncProgress} 
+        onClose={handleSyncClose}
+      />
+      
       <Toaster 
         toastOptions={{
           success: {
