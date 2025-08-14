@@ -63,22 +63,28 @@ export function SignInForm({ callbackUrl, error }: SignInFormProps) {
 
       console.log('Signing in with callbackUrl:', secureCallbackUrl)
       
-      // Use redirect: true to properly handle OAuth flow
-      const result = await signIn(provider, {
-        callbackUrl: secureCallbackUrl,
-        redirect: true,
-      })
-
-      console.log('Sign in result:', result)
-
-      if (result?.error) {
-        console.error(`${provider} sign in error:`, result.error)
-        // Handle error
-        router.push(`/auth/signin?error=${encodeURIComponent(result.error)}`)
-      } else if (result?.ok) {
-        console.log('Sign in successful, redirecting to:', secureCallbackUrl)
-        // Manual redirect after successful sign in
-        router.push(secureCallbackUrl)
+      // For Google, we need to ensure Calendar scopes are included
+      if (provider === 'google') {
+        // Use signIn with authorizationParams to force Calendar scopes
+        const result = await signIn('google', {
+          callbackUrl: secureCallbackUrl,
+          redirect: true,
+          // Force Calendar scopes
+          authorizationParams: {
+            scope: 'openid email profile https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/calendar.events',
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+        } as any)
+        
+        console.log('Sign in result:', result)
+      } else {
+        const result = await signIn(provider, {
+          callbackUrl: secureCallbackUrl,
+          redirect: true,
+        })
+        
+        console.log('Sign in result:', result)
       }
     } catch (error) {
       console.error(`${provider} sign in exception:`, error)
