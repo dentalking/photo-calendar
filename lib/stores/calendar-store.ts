@@ -43,6 +43,7 @@ interface CalendarState {
   // Events
   events: CalendarEvent[];
   loading: boolean;
+  isLoading: boolean;
   error: string | null;
   
   // Filters
@@ -52,7 +53,8 @@ interface CalendarState {
   isEventModalOpen: boolean;
   isCreateModalOpen: boolean;
   isDragging: boolean;
-  draggedEvent: CalendarEvent | null;
+  draggedEvent: CalendarEvent | undefined;
+  setDraggedEvent: (event: CalendarEvent | undefined) => void;
   
   // Actions
   setView: (view: ViewType) => void;
@@ -82,9 +84,9 @@ interface CalendarState {
   stopDragging: () => void;
   
   // Utility
-  getEventsForDate: (date: Date) => CalendarEvent[];
-  getEventsForMonth: (date: Date) => CalendarEvent[];
-  getFilteredEvents: () => CalendarEvent[];
+  getEventsForDate: (date: Date) => any[];
+  getEventsForMonth: (date: Date) => any[];
+  getFilteredEvents: () => any[];
 }
 
 const initialFilters: CalendarFilter = {
@@ -104,12 +106,14 @@ export const useCalendarStore = create<CalendarState>()(
         selectedEvent: null,
         events: [],
         loading: false,
+        isLoading: false,
         error: null,
         filters: initialFilters,
         isEventModalOpen: false,
         isCreateModalOpen: false,
         isDragging: false,
-        draggedEvent: null,
+        draggedEvent: undefined,
+        setDraggedEvent: (event) => set({ draggedEvent: event }),
 
         // View actions
         setView: (view) => set({ currentView: view }),
@@ -131,7 +135,7 @@ export const useCalendarStore = create<CalendarState>()(
 
         // Event actions
         fetchEvents: async (startDate, endDate) => {
-          set({ loading: true, error: null });
+          set({ loading: true, isLoading: true, error: null });
           
           try {
             const start = startDate || startOfMonth(get().currentDate);
@@ -170,12 +174,13 @@ export const useCalendarStore = create<CalendarState>()(
               updatedAt: new Date(event.updatedAt),
             }));
             
-            set({ events, loading: false });
+            set({ events, loading: false, isLoading: false });
           } catch (error) {
             console.error('Error fetching events:', error);
             set({ 
               error: error instanceof Error ? error.message : 'Failed to fetch events',
-              loading: false 
+              loading: false,
+              isLoading: false 
             });
           }
         },
@@ -305,10 +310,26 @@ export const useCalendarStore = create<CalendarState>()(
             ? new Date(newStartTime.getTime() + duration)
             : undefined);
           
-          await get().updateEvent(eventId, {
-            startTime: newStartTime,
-            endTime,
-          });
+          // Update the event in the store immediately for optimistic UI
+          set((state) => ({
+            events: state.events.map(e => 
+              e.id === eventId 
+                ? { ...e, startTime: newStartTime, endTime }
+                : e
+            )
+          }));
+          
+          // Then update on server
+          try {
+            await get().updateEvent(eventId, {
+              startTime: newStartTime,
+              endTime,
+            });
+          } catch (error) {
+            // Revert on error
+            await get().fetchEvents();
+            throw error;
+          }
         },
 
         // Filter actions
@@ -359,7 +380,7 @@ export const useCalendarStore = create<CalendarState>()(
         },
         
         stopDragging: () => {
-          set({ isDragging: false, draggedEvent: null });
+          set({ isDragging: false, draggedEvent: undefined });
         },
 
         // Utility functions
@@ -369,7 +390,13 @@ export const useCalendarStore = create<CalendarState>()(
             const eventDate = format(event.startTime, 'yyyy-MM-dd');
             const targetDate = format(date, 'yyyy-MM-dd');
             return eventDate === targetDate;
-          });
+          }).map(event => ({
+            ...event,
+            startDate: event.startTime,
+            endDate: event.endTime,
+            status: event.confidence && event.confidence >= 0.8 ? 'CONFIRMED' : 'PENDING',
+            confidenceScore: event.confidence || 1,
+          }));
         },
         
         getEventsForMonth: (date) => {
@@ -379,7 +406,13 @@ export const useCalendarStore = create<CalendarState>()(
           
           return events.filter(event => {
             return event.startTime >= start && event.startTime <= end;
-          });
+          }).map(event => ({
+            ...event,
+            startDate: event.startTime,
+            endDate: event.endTime,
+            status: event.confidence && event.confidence >= 0.8 ? 'CONFIRMED' : 'PENDING',
+            confidenceScore: event.confidence || 1,
+          }));
         },
         
         getFilteredEvents: () => {
@@ -417,7 +450,13 @@ export const useCalendarStore = create<CalendarState>()(
             }
             
             return true;
-          });
+          }).map(event => ({
+            ...event,
+            startDate: event.startTime,
+            endDate: event.endTime,
+            status: event.confidence && event.confidence >= 0.8 ? 'CONFIRMED' : 'PENDING',
+            confidenceScore: event.confidence || 1,
+          }));
         },
       }),
       {

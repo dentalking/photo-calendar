@@ -9,7 +9,7 @@ import { AIParsingConfig, CostOptimizationSettings, UserPreferences } from './ty
 export const DEFAULT_AI_CONFIG: AIParsingConfig = {
   // OpenAI settings
   apiKey: process.env.OPENAI_API_KEY || '',
-  model: 'gpt-4.1-nano', // Fastest and most cost-effective model (April 2025)
+  model: 'gpt-3.5-turbo', // Fast and cost-effective model
   maxTokens: 2000,
   temperature: 0.1,
   
@@ -31,8 +31,8 @@ export const DEFAULT_AI_CONFIG: AIParsingConfig = {
 // Cost optimization settings
 export const COST_OPTIMIZATION: CostOptimizationSettings = {
   // Model selection
-  primaryModel: 'gpt-4.1-nano', // Primary model for cost optimization
-  fallbackModel: 'gpt-4o-mini', // Fallback model
+  primaryModel: 'gpt-3.5-turbo', // Primary model for cost optimization
+  fallbackModel: 'gpt-3.5-turbo', // Fallback model
   smartModelSelection: true,
   
   // Token limits

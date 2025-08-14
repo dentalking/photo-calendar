@@ -30,7 +30,6 @@ export type {
   TextParsingContext,
   KoreanTextNormalization,
   TextPatterns,
-  OCRError,
 } from './types';
 
 // Configuration
@@ -46,10 +45,11 @@ export {
 } from './config';
 
 // Import required classes for OCRUtils
-import { OCRService } from './ocr-service';
+import { OCRService, ocrService } from './ocr-service';
 import { ImagePreprocessor } from './preprocessing';
 import { TextParser } from './text-parsers';
 import { ocrCache } from './cache';
+import { OCRError } from './types';
 import type { OCRConfig } from './types';
 
 // Utility functions

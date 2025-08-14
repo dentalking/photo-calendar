@@ -22,6 +22,7 @@ import {
   getMinutes,
   isWithinInterval
 } from 'date-fns'
+import { ko } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
 
 interface TimeSlotProps {
@@ -198,7 +199,7 @@ export function WeekView() {
               )}
             >
               <div className="text-xs font-medium">
-                {format(day, 'EEE', { locale: require('date-fns/locale/ko') })}
+                {format(day, 'EEE', { locale: ko })}
               </div>
               <div className="text-sm font-bold">
                 {format(day, 'd')}

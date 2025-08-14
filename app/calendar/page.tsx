@@ -3,9 +3,9 @@
 import { useEffect } from 'react';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
-import { Calendar, ChevronLeft, ChevronRight, Plus, Search, Filter, Grid3x3, List } from 'lucide-react';
+import { Calendar, ChevronLeft, ChevronRight, Plus, Search, Filter, Grid3x3, List, CalendarDays } from 'lucide-react';
 import { useCalendarStore } from '@/lib/stores/calendar-store';
-import { Calendar as CalendarComponent } from '@/components/ui/calendar';
+import { CalendarView } from '@/components/calendar/calendar-view';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -56,7 +56,14 @@ export default function CalendarPage() {
     fetchEvents();
   }, []);
 
-  const filteredEvents = getFilteredEvents();
+  // Convert events to match the view components' expected format
+  const filteredEvents = getFilteredEvents().map(event => ({
+    ...event,
+    startDate: event.startTime,
+    endDate: event.endTime,
+    status: event.confidence && event.confidence >= 0.8 ? 'CONFIRMED' : 'PENDING',
+    confidenceScore: event.confidence || 1,
+  }));
 
   const handlePhotoUpload = async (files: Array<{id: string; file: File; preview: string; error?: string}>) => {
     const actualFiles = files.filter(f => !f.error).map(f => f.file);
@@ -187,14 +194,34 @@ export default function CalendarPage() {
                   size="sm"
                   onClick={() => setView('month')}
                   className="px-3"
+                  title="월간 보기"
                 >
                   <Grid3x3 className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant={currentView === 'week' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setView('week')}
+                  className="px-3"
+                  title="주간 보기"
+                >
+                  <CalendarDays className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant={currentView === 'day' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setView('day')}
+                  className="px-3"
+                  title="일간 보기"
+                >
+                  <Calendar className="h-4 w-4" />
                 </Button>
                 <Button
                   variant={currentView === 'list' ? 'default' : 'ghost'}
                   size="sm"
                   onClick={() => setView('list')}
                   className="px-3"
+                  title="목록 보기"
                 >
                   <List className="h-4 w-4" />
                 </Button>
@@ -303,29 +330,7 @@ export default function CalendarPage() {
           <div className="flex justify-center items-center h-96">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
           </div>
-        ) : currentView === 'month' ? (
-          <CalendarComponent
-            events={filteredEvents.map(event => ({
-              id: event.id,
-              title: event.title,
-              date: new Date(event.startTime),
-              photo: event.sourceImage,
-              color: getCategoryColor(event.category),
-            }))}
-            selectedDate={currentDate}
-            onDateSelect={(date) => {
-              selectDate(date);
-              openCreateModal(date);
-            }}
-            onEventClick={(event) => {
-              const fullEvent = filteredEvents.find(e => e.id === event.id);
-              if (fullEvent) {
-                openEventModal(fullEvent);
-              }
-            }}
-            onAddEvent={(date) => openCreateModal(date)}
-          />
-        ) : (
+        ) : currentView === 'list' ? (
           <div className="space-y-4">
             {filteredEvents.length === 0 ? (
               <Card className="p-12 text-center">
@@ -345,15 +350,15 @@ export default function CalendarPage() {
                   event={{
                     id: event.id,
                     title: event.title,
-                    startDate: event.startTime,
-                    endDate: event.endTime,
+                    startDate: event.startDate,
+                    endDate: event.endDate,
                     location: event.location,
                     description: event.description,
                     category: event.category,
                     color: event.color || getCategoryColor(event.category),
                     isAllDay: event.isAllDay,
-                    status: 'CONFIRMED',
-                    confidenceScore: event.confidence || 1,
+                    status: event.status,
+                    confidenceScore: event.confidenceScore,
                     isUserVerified: true,
                     isVisible: true,
                   }}
@@ -363,6 +368,8 @@ export default function CalendarPage() {
               ))
             )}
           </div>
+        ) : (
+          <CalendarView />
         )}
       </div>
 

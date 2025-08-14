@@ -21,19 +21,20 @@ const validateParsedEvent = async (event: ParsedCalendarEvent) => {
 
 export class AIAnalysisService {
   private openai: OpenAI;
-  private config: typeof AI_CONFIG;
+  private config: typeof AI_CONFIG.DEFAULT_AI_CONFIG;
 
   constructor() {
-    this.config = AI_CONFIG;
+    this.config = AI_CONFIG.DEFAULT_AI_CONFIG;
     
-    // Initialize OpenAI client
-    this.openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    });
-
     if (!process.env.OPENAI_API_KEY) {
       console.warn('OpenAI API key not found. AI analysis will be limited.');
     }
+    
+    // Initialize OpenAI client
+    console.log('Initializing OpenAI client with API key:', process.env.OPENAI_API_KEY ? `${process.env.OPENAI_API_KEY.substring(0, 10)}...` : 'NOT SET');
+    this.openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY || '',
+    });
   }
 
   /**
@@ -48,7 +49,7 @@ export class AIAnalysisService {
     try {
       // Check cache first
       const cacheKey = this.generateCacheKey(text, options);
-      const cachedResult = await aiCache.get(cacheKey);
+      const cachedResult = await aiCache.getCachedResult(cacheKey);
       
       if (cachedResult && options.useCache !== false) {
         return {
@@ -80,7 +81,7 @@ export class AIAnalysisService {
         events: validatedEvents,
         confidence,
         metadata: {
-          model: options.model || this.config.defaultModel,
+          model: options.model || this.config.model,
           processingTime: Date.now() - startTime,
           tokensUsed: completion.usage?.total_tokens || 0,
           originalText: text,
@@ -90,13 +91,25 @@ export class AIAnalysisService {
 
       // Cache the result
       if (options.useCache !== false) {
-        await aiCache.set(cacheKey, result, this.config.cacheExpiration);
+        await aiCache.cacheResult(
+          cacheKey,
+          result,
+          {
+            documentType: options.documentType,
+            language: options.language,
+            currentDate: options.currentDate,
+            timezone: options.timezone,
+          } as any,
+          []
+        );
       }
 
       return result;
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('AI Analysis Error:', error);
+      console.error('Error message:', error?.message);
+      console.error('Error stack:', error?.stack);
       
       // Fallback to basic parsing if AI fails
       return this.fallbackParsing(text, options);
@@ -141,13 +154,13 @@ export class AIAnalysisService {
     prompt: string,
     options: AIAnalysisOptions
   ): Promise<OpenAI.Chat.ChatCompletion> {
-    const maxRetries = options.maxRetries || this.config.maxRetries;
+    const maxRetries = options.maxRetries || AI_CONFIG.ERROR_CONFIG.maxRetries;
     let lastError: Error | null = null;
 
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
         const response = await this.openai.chat.completions.create({
-          model: options.model || this.config.defaultModel,
+          model: options.model || this.config.model,
           messages: [
             {
               role: 'system',
@@ -165,8 +178,15 @@ export class AIAnalysisService {
 
         return response;
 
-      } catch (error) {
+      } catch (error: any) {
         lastError = error as Error;
+        console.error(`OpenAI API attempt ${attempt + 1} failed:`, error?.message);
+        console.error('Error details:', {
+          code: error?.code,
+          status: error?.response?.status,
+          type: error?.type,
+          data: error?.response?.data
+        });
         
         // Check if error is retryable
         if (this.isRetryableError(error)) {
@@ -302,7 +322,7 @@ export class AIAnalysisService {
         .replace('{originalText}', originalText);
 
       const response = await this.openai.chat.completions.create({
-        model: this.config.defaultModel,
+        model: this.config.model,
         messages: [
           {
             role: 'system',
@@ -401,7 +421,7 @@ export class AIAnalysisService {
     
     hash.update(text);
     hash.update(JSON.stringify({
-      model: options.model || this.config.defaultModel,
+      model: options.model || this.config.model,
       documentType: options.documentType,
       language: options.language,
     }));
@@ -466,8 +486,24 @@ export class AIAnalysisService {
   }
 }
 
-// Export singleton instance
-export const aiAnalysisService = new AIAnalysisService();
+// Export singleton instance with lazy initialization
+let _aiAnalysisService: AIAnalysisService | null = null;
+
+export const aiAnalysisService = {
+  analyzeText: async (text: string, options: any = {}) => {
+    if (!_aiAnalysisService) {
+      _aiAnalysisService = new AIAnalysisService();
+    }
+    return _aiAnalysisService.analyzeText(text, options);
+  },
+  
+  extractEventsFromText: async (text: string, options: any = {}) => {
+    if (!_aiAnalysisService) {
+      _aiAnalysisService = new AIAnalysisService();
+    }
+    return _aiAnalysisService.extractEventsFromText(text, options);
+  }
+};
 
 // Export for testing
 export default AIAnalysisService;

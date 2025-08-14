@@ -157,8 +157,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     let ocrConfidence = 0
 
     try {
-      const ocrResult = await ocrService.extractTextFromImage(cleanBuffer)
-      extractedText = ocrResult.fullText
+      const ocrResult = await ocrService.extractText(cleanBuffer)
+      extractedText = ocrResult.text
       ocrConfidence = ocrResult.confidence || 0
 
       // Update extraction record with OCR results

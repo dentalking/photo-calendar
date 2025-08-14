@@ -20,6 +20,7 @@ import {
   endOfDay,
   differenceInMinutes
 } from 'date-fns'
+import { ko } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
 
 interface TimeSlotProps {
@@ -215,7 +216,7 @@ export function DayView() {
         <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="text-2xl font-bold">
-              {format(currentDate, 'M월 d일 EEEE', { locale: require('date-fns/locale/ko') })}
+              {format(currentDate, 'M월 d일 EEEE', { locale: ko })}
             </h2>
             {isToday(currentDate) && (
               <Badge variant="outline" className="mt-1">오늘</Badge>
