@@ -10,7 +10,7 @@
   },
   "functions": {
     "app/api/photo/extract/route.ts": {
-      "maxDuration": 30
+      "maxDuration": 60
     },
     "app/api/events/import/route.ts": {
       "maxDuration": 30
