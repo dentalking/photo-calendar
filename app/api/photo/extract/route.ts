@@ -405,7 +405,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
                   },
                   billingPeriodStart: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
                   billingPeriodEnd: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0)
-                })
+                }
               })
             } catch (eventError) {
               console.error('Failed to create event:', eventError, eventData)

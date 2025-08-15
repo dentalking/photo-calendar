@@ -123,18 +123,18 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
             minConfidence: 0.5,
             defaultCategory: 'general'
           })
-          logs.push(`AI Analysis result: ${JSON.stringify(analysis, null, 2).substring(0, 500)}`)
-          events = analysis.events || []
-          logs.push(`✅ AI Analysis: Found ${events.length} events`)
+          logs.push(`AI Analysis result: ${JSON.stringify(analysis, null, 2).substring(0, 500)}`);
+          events = analysis.events || [];
+          logs.push(`✅ AI Analysis: Found ${events.length} events`);
           
           if (events.length > 0) {
-            aiSucceeded = true
+            aiSucceeded = true;
           } else {
-            logs.push(`⚠️ AI found no events, will use enhanced fallback parser`)
+            logs.push(`⚠️ AI found no events, will use enhanced fallback parser`);
           }
         } catch (aiError: any) {
-          logs.push(`❌ AI Service error: ${aiError.message}`)
-          logs.push(`Error stack: ${aiError.stack?.substring(0, 500)}`)
+          logs.push(`❌ AI Service error: ${aiError.message}`);
+          logs.push(`Error stack: ${aiError.stack?.substring(0, 500)}`);
         }
         
         // If AI didn't find any events, use our enhanced fallback
