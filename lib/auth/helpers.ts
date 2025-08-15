@@ -1,6 +1,6 @@
 import { getServerSession } from 'next-auth/next'
 import { redirect } from 'next/navigation'
-import { authOptions } from './config'
+import { authOptions } from './auth-options'
 import type { Session } from 'next-auth'
 
 /**

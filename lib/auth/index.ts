@@ -4,7 +4,7 @@
  */
 
 // Configuration
-export { authOptions, default as authConfig } from './config'
+export { authOptions, default as authConfig } from './auth-options'
 
 // Server-side helpers
 export {

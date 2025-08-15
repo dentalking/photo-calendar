@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { authOptions } from '@/lib/auth/config'
+import { authOptions } from '@/lib/auth/auth-options'
 
 export async function GET(request: NextRequest) {
   try {

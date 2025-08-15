@@ -1,5 +1,5 @@
 import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth/config'
+import { authOptions } from '@/lib/auth/auth-options'
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 
