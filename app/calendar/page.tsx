@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
-import { Calendar, ChevronLeft, ChevronRight, Plus, Search, Filter, Grid3x3, List, CalendarDays } from 'lucide-react';
+import { Calendar, ChevronLeft, ChevronRight, Plus, Search, Filter, Grid3x3, List, CalendarDays, Settings } from 'lucide-react';
 import { useCalendarStore } from '@/lib/stores/calendar-store';
 import { CalendarView } from '@/components/calendar/calendar-view';
 import { EventModal } from '@/components/calendar/event-modal';
@@ -32,6 +33,7 @@ const getCategoryColor = (category: string): string => {
 };
 
 export default function CalendarPage() {
+  const router = useRouter();
   const [showSyncProgress, setShowSyncProgress] = useState(false);
   
   const {
@@ -201,6 +203,16 @@ export default function CalendarPage() {
                   <List className="h-4 w-4" />
                 </Button>
               </div>
+              
+              {/* Settings Button */}
+              <Button 
+                variant="outline" 
+                onClick={() => router.push('/settings')}
+                className="mr-2"
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                설정
+              </Button>
               
               {/* Google Calendar Sync Button */}
               <Button 
