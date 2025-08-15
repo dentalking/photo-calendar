@@ -105,7 +105,7 @@ export default function CalendarPage() {
               { id: file.name, duration: 3000 }
             );
           } else {
-            toast.info(
+            toast(
               `${file.name}: 일정을 찾을 수 없습니다`, 
               { id: file.name, duration: 3000 }
             );
