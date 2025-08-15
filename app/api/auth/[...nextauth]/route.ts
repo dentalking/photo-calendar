@@ -70,4 +70,4 @@ async function handler(request: NextRequest, context: any) {
   }
 }
 
-export { handler as GET, handler as POST, authOptions }
+export { handler as GET, handler as POST }
