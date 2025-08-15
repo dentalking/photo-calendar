@@ -30,13 +30,14 @@ export class OCRService {
     this.config = { ...DEFAULT_OCR_CONFIG, ...config };
     this.preprocessor = new ImagePreprocessor();
     
-    // Try to initialize Vision Service, but don't fail if it doesn't work
+    // Initialize Vision Service with better error handling
     try {
       this.visionService = new GoogleVisionService(this.config);
       console.log('OCRService: Vision service initialized successfully');
     } catch (error) {
       console.error('OCRService: Failed to initialize Vision service:', error);
-      // Vision service will be null, fallback will be used
+      console.error('OCRService: Will attempt lazy initialization on first use');
+      // Set to null initially, but allow lazy initialization
       this.visionService = null as any;
     }
     
@@ -248,14 +249,20 @@ export class OCRService {
     options: any,
     attempt: number = 0
   ): Promise<OCRResult> {
-    // Check if Vision service is available
+    // Try lazy initialization if Vision service is not available
     if (!this.visionService) {
-      console.warn('Vision service not available, using fallback');
-      throw new OCRError(
-        'Vision service not initialized',
-        'SERVICE_UNAVAILABLE',
-        false
-      );
+      console.log('Attempting lazy initialization of Vision service...');
+      try {
+        this.visionService = new GoogleVisionService(this.config);
+        console.log('Lazy initialization successful');
+      } catch (error) {
+        console.error('Lazy initialization failed:', error);
+        throw new OCRError(
+          'Vision service initialization failed',
+          'SERVICE_UNAVAILABLE',
+          false
+        );
+      }
     }
     
     try {
