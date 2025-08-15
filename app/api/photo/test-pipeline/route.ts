@@ -139,20 +139,78 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       }
     } catch (aiError) {
       logs.push(`❌ AI analysis failed: ${aiError}`)
-      logs.push('Using fallback date/time extraction...')
+      logs.push('Using enhanced Korean fallback parser...')
       
-      // Simple fallback extraction
-      const dateMatch = extractedText.match(/(\d{4}년\s*\d{1,2}월\s*\d{1,2}일)|(\d{1,2}월\s*\d{1,2}일)/)
-      const timeMatch = extractedText.match(/(\d{1,2}:\d{2})|(\d{1,2}시\s*\d{0,2}분?)/)
+      // Enhanced Korean text parser
+      const lines = extractedText.split('\n').filter(line => line.trim().length > 0)
+      logs.push(`Text lines: ${JSON.stringify(lines)}`)
       
-      if (dateMatch || timeMatch) {
+      // Extract title (first line that looks like a title)
+      const title = lines[0] || 'Extracted Event'
+      logs.push(`Extracted title: ${title}`)
+      
+      // Extract date - Korean format
+      const datePattern = /(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일/
+      const dateMatch = extractedText.match(datePattern)
+      let eventDate = new Date()
+      
+      if (dateMatch) {
+        const year = parseInt(dateMatch[1])
+        const month = parseInt(dateMatch[2]) - 1 // JavaScript months are 0-indexed
+        const day = parseInt(dateMatch[3])
+        eventDate = new Date(year, month, day)
+        logs.push(`✅ Date extracted: ${year}-${month+1}-${day} -> ${eventDate.toISOString()}`)
+      } else {
+        logs.push(`⚠️ No date pattern found, using current date`)
+      }
+      
+      // Extract time - Korean format
+      const timePattern = /오후\s*(\d{1,2})시\s*(\d{1,2})분?|오전\s*(\d{1,2})시\s*(\d{1,2})분?|(\d{1,2}):(\d{2})/
+      const timeMatch = extractedText.match(timePattern)
+      
+      if (timeMatch) {
+        let hour = 0
+        let minute = 0
+        
+        if (timeMatch[1] && timeMatch[2]) { // 오후 format
+          hour = parseInt(timeMatch[1])
+          minute = parseInt(timeMatch[2]) || 0
+          if (hour !== 12) hour += 12 // Convert to 24-hour format
+          logs.push(`✅ PM Time extracted: ${hour}:${minute}`)
+        } else if (timeMatch[3] && timeMatch[4]) { // 오전 format
+          hour = parseInt(timeMatch[3])
+          minute = parseInt(timeMatch[4]) || 0
+          if (hour === 12) hour = 0 // 12 AM = 0 hours
+          logs.push(`✅ AM Time extracted: ${hour}:${minute}`)
+        } else if (timeMatch[5] && timeMatch[6]) { // HH:MM format
+          hour = parseInt(timeMatch[5])
+          minute = parseInt(timeMatch[6])
+          logs.push(`✅ 24-hour Time extracted: ${hour}:${minute}`)
+        }
+        
+        eventDate.setHours(hour, minute, 0, 0)
+      }
+      
+      // Extract location
+      const locationPattern = /(.*돔|.*경기장|.*센터|.*홀|.*극장|.*공원)/
+      const locationMatch = extractedText.match(locationPattern)
+      const location = locationMatch ? locationMatch[0] : ''
+      logs.push(`Location extracted: ${location}`)
+      
+      // Create event if we have enough information
+      if (title && (dateMatch || timeMatch)) {
         events = [{
-          title: extractedText.split('\n')[0].substring(0, 50),
-          startDate: new Date().toISOString(),
+          title: title,
+          startDate: eventDate.toISOString(),
+          endDate: null,
+          location: location,
           description: extractedText,
-          confidence: 0.3
+          confidence: 0.8,
+          isAllDay: !timeMatch
         }]
-        logs.push(`✅ Fallback: Created basic event from text`)
+        logs.push(`✅ Enhanced Fallback: Created event - ${title} on ${eventDate.toISOString()}`)
+      } else {
+        logs.push(`⚠️ Not enough information to create event`)
       }
     }
     
