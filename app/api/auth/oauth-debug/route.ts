@@ -37,9 +37,8 @@ export async function GET(request: NextRequest) {
     
     // Google OAuth Console Configuration Check
     const googleConsoleCheck = {
-      expectedClientId: '631982529712-ehmbs1abm3892pkphoivbbn9v39oia68.apps.googleusercontent.com',
       actualClientId: googleClientId,
-      clientIdMatches: googleClientId === '631982529712-ehmbs1abm3892pkphoivbbn9v39oia68.apps.googleusercontent.com',
+      clientIdFormat: googleClientId ? /^\d+-[a-zA-Z0-9]+\.apps\.googleusercontent\.com$/.test(googleClientId) : false,
       redirectUris: [
         'https://photo-calendar.vercel.app/api/auth/callback/google'
       ],
@@ -68,11 +67,6 @@ export async function GET(request: NextRequest) {
     
     // Common OAuth Error Scenarios
     const commonIssues = [
-      {
-        issue: 'Client ID Mismatch',
-        check: !googleConsoleCheck.clientIdMatches,
-        solution: 'Verify GOOGLE_CLIENT_ID matches Google Console exactly'
-      },
       {
         issue: 'HTTP instead of HTTPS',
         check: !urlValidation.isHttps && environmentCheck.isProduction,
@@ -123,7 +117,7 @@ export async function GET(request: NextRequest) {
       },
       expectedConfiguration: {
         nextAuthUrl: 'https://photo-calendar.vercel.app',
-        googleClientId: '631982529712-ehmbs1abm3892pkphoivbbn9v39oia68.apps.googleusercontent.com',
+        googleClientId: googleClientId || 'Not set',
         oauthUrls: expectedUrls
       },
       issues: activeIssues,
