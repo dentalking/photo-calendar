@@ -89,7 +89,7 @@ export default function CalendarPage() {
       toast.loading(`${file.name} 처리 중...`, { id: file.name });
       
       try {
-        const response = await fetch('/api/photo/extract', {
+        const response = await fetch('/api/photo/simple-extract', {
           method: 'POST',
           body: formData,
         });
