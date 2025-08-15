@@ -97,7 +97,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
     
     // Step 2: AI Event Analysis
-    let events = []
+    let events = [];
     try {
       const { aiAnalysisService } = await import('@/lib/ai/openai-service')
       
@@ -112,12 +112,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           language: 'ko',
           processingDate: new Date().toISOString()
         })
-        events = await parser.parseEvents(extractedText)
-        logs.push(`✅ Fallback parser: Found ${events.length} events`)
+        events = await parser.parseEvents(extractedText);
+        logs.push(`✅ Fallback parser: Found ${events.length} events`);
       } else {
-        logs.push(`OpenAI API key configured (length: ${process.env.OPENAI_API_KEY.length})`)
+        logs.push(`OpenAI API key configured (length: ${process.env.OPENAI_API_KEY.length})`);
         
-        let aiSucceeded = false
+        let aiSucceeded = false;
         try {
           const analysis = await aiAnalysisService.extractEventsFromText(extractedText, {
             minConfidence: 0.5,
@@ -208,25 +208,27 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
               confidence: 0.8,
               isAllDay: !timeMatch
             }]
-            logs.push(`✅ Enhanced Fallback: Created event - ${title} on ${eventDate.toISOString()}`)
+            logs.push(`✅ Enhanced Fallback: Created event - ${title} on ${eventDate.toISOString()}`);
           } else {
-            logs.push(`⚠️ Not enough information to create event`)
+            logs.push(`⚠️ Not enough information to create event`);
           }
         }
       }
       
       if (events.length > 0) {
-        logs.push('Events found:')
+        logs.push('Events found:');
         events.forEach((event: any, index: number) => {
-          logs.push(`  ${index + 1}. ${event.title} - ${event.startDate}`)
-        })
+          logs.push(`  ${index + 1}. ${event.title} - ${event.startDate}`);
+        });
       }
+    } catch (error) {
+      logs.push(`❌ AI processing error: ${error}`);
     }
     
     // Step 3: Test Event Creation (without actual DB save)
-    let createdEvents = []
+    let createdEvents: any[] = [];
     if (events.length > 0) {
-      logs.push('Testing event creation...')
+      logs.push('Testing event creation...');
       
       // Simulate event creation
       createdEvents = events.map((event: any) => ({
@@ -234,17 +236,17 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         ...event,
         status: 'test',
         created: new Date().toISOString()
-      }))
+      }));
       
-      logs.push(`✅ Would create ${createdEvents.length} events in database`)
+      logs.push(`✅ Would create ${createdEvents.length} events in database`);
     }
     
     // Summary
-    logs.push('---')
-    logs.push('Pipeline test complete!')
-    logs.push(`- Text extracted: ${extractedText ? 'Yes' : 'No'}`)
-    logs.push(`- Events found: ${events.length}`)
-    logs.push(`- Ready for creation: ${createdEvents.length}`)
+    logs.push('---');
+    logs.push('Pipeline test complete!');
+    logs.push(`- Text extracted: ${extractedText ? 'Yes' : 'No'}`);
+    logs.push(`- Events found: ${events.length}`);
+    logs.push(`- Ready for creation: ${createdEvents.length}`);
     
     return NextResponse.json({
       success: true,
