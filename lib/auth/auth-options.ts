@@ -1,11 +1,13 @@
 import { NextAuthOptions } from 'next-auth'
-import { PrismaAdapter } from '@next-auth/prisma-adapter'
-import { prisma } from '@/lib/prisma'
+// import { PrismaAdapter } from '@next-auth/prisma-adapter'
+// import { prisma } from '@/lib/prisma'
 import { getGoogleProvider } from './google-provider-config'
 
 export const authOptions: NextAuthOptions = {
   debug: true, // Enable debug mode
-  adapter: PrismaAdapter(prisma),
+  // NOTE: Adapter disabled when using JWT strategy to avoid conflicts
+  // When using JWT, NextAuth handles sessions in-memory via encrypted tokens
+  // adapter: PrismaAdapter(prisma),
   providers: [
     getGoogleProvider(),
   ],
@@ -41,7 +43,9 @@ export const authOptions: NextAuthOptions = {
         
         // Return previous token if the access token has not expired yet
         if (Date.now() < (token.expiresAt as number) * 1000) {
-          // Fetch onboarding status on every token refresh - wrapped in try/catch
+          // TODO: Re-enable onboarding status check when adapter is fixed
+          // Currently disabled due to JWT/Adapter conflict
+          /*
           if (token.email) {
             try {
               const dbUser = await prisma.user.findUnique({
@@ -56,6 +60,7 @@ export const authOptions: NextAuthOptions = {
               // Continue without onboarding status
             }
           }
+          */
           return token
         }
         

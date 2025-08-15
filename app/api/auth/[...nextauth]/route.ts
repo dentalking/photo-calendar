@@ -1,7 +1,5 @@
 import NextAuth from 'next-auth'
-// Temporarily use JWT-only config for debugging
-import { authOptionsJWT as authOptions } from '@/lib/auth/auth-options-jwt'
-// import { authOptions } from '@/lib/auth/auth-options'
+import { authOptions } from '@/lib/auth/auth-options'
 import { NextRequest, NextResponse } from 'next/server'
 import { rateLimit } from '@/lib/auth/rate-limit'
 

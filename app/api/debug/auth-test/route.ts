@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
-// import { authOptions } from '@/lib/auth/auth-options'
-import { authOptionsJWT as authOptions } from '@/lib/auth/auth-options-jwt'
+import { authOptions } from '@/lib/auth/auth-options'
 import { getServerSession } from 'next-auth'
 
 export async function GET() {
