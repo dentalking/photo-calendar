@@ -1,5 +1,5 @@
 import NextAuth from 'next-auth'
-import { authOptions } from '@/lib/auth/config'
+import { authOptions } from '@/lib/auth/auth-options'
 import { NextRequest, NextResponse } from 'next/server'
 import { rateLimit } from '@/lib/auth/rate-limit'
 
