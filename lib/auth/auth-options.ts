@@ -4,12 +4,14 @@ import { prisma } from '@/lib/prisma'
 import { getGoogleProvider } from './google-provider-config'
 
 export const authOptions: NextAuthOptions = {
+  debug: true, // Enable debug mode
   adapter: PrismaAdapter(prisma),
   providers: [
     getGoogleProvider(),
   ],
   session: {
     strategy: 'jwt',
+    maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   callbacks: {
     async jwt({ token, user, account, trigger }) {
