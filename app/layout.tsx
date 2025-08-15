@@ -5,6 +5,9 @@ import { Toaster } from "@/components/ui/toaster";
 import { SessionProvider } from "@/components/auth/session-provider";
 import { getOptionalAuthSession } from "@/lib/auth/helpers";
 import { ThemeProvider } from "@/components/theme/theme-provider";
+import { InstallPrompt } from "@/components/pwa/install-prompt";
+import { OfflineIndicator } from "@/components/pwa/offline-indicator";
+import { PerformanceInitializer } from "@/components/performance/performance-initializer";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -95,7 +98,10 @@ export default async function RootLayout({
           disableTransitionOnChange
         >
           <SessionProvider session={session}>
+            <PerformanceInitializer />
             {children}
+            <InstallPrompt />
+            <OfflineIndicator />
           </SessionProvider>
           <Toaster />
         </ThemeProvider>

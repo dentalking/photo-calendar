@@ -12,6 +12,22 @@ const nextConfig: NextConfig = {
     // your project has type errors.
     ignoreBuildErrors: true
   },
+  // Performance optimizations
+  swcMinify: true,
+  compress: true,
+  poweredByHeader: false,
+  reactStrictMode: true,
+  
+  // Image optimization
+  images: {
+    formats: ['image/avif', 'image/webp'],
+    minimumCacheTTL: 60 * 60 * 24 * 30, // 30 days
+  },
+  
+  // Bundle optimization
+  experimental: {
+    optimizePackageImports: ['lucide-react', '@dnd-kit/core', 'date-fns'],
+  },
   // Security headers for OAuth and iframe protection
   async headers() {
     return [
@@ -43,6 +59,68 @@ const nextConfig: NextConfig = {
         ]
       }
     ]
+  },
+  // Webpack configuration for bundle optimization
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      // Replace react with preact in production for smaller bundle
+      if (process.env.NODE_ENV === 'production') {
+        Object.assign(config.resolve.alias, {
+          'react/jsx-runtime': 'preact/compat/jsx-runtime',
+          react: 'preact/compat',
+          'react-dom': 'preact/compat',
+        });
+      }
+      
+      // Split chunks optimization
+      config.optimization.splitChunks = {
+        chunks: 'all',
+        cacheGroups: {
+          default: false,
+          vendors: false,
+          framework: {
+            name: 'framework',
+            chunks: 'all',
+            test: /(?<!node_modules.*)[\\/]node_modules[\\/](react|react-dom|scheduler|prop-types|use-subscription)[\\/]/,
+            priority: 40,
+            enforce: true,
+          },
+          lib: {
+            test(module: any) {
+              return module.size() > 160000 &&
+                /node_modules[\\/]/.test(module.identifier());
+            },
+            name(module: any) {
+              const hash = require('crypto').createHash('sha1');
+              hash.update(module.identifier());
+              return hash.digest('hex').substring(0, 8);
+            },
+            priority: 30,
+            minChunks: 1,
+            reuseExistingChunk: true,
+          },
+          commons: {
+            name: 'commons',
+            minChunks: 2,
+            priority: 20,
+          },
+          shared: {
+            name(module: any, chunks: any) {
+              return 'shared-' +
+                require('crypto')
+                  .createHash('sha1')
+                  .update(chunks.reduce((acc: string, chunk: any) => acc + chunk.name, ''))
+                  .digest('hex')
+                  .substring(0, 8);
+            },
+            priority: 10,
+            minChunks: 2,
+            reuseExistingChunk: true,
+          },
+        },
+      };
+    }
+    return config;
   },
   // Redirect configuration for OAuth
   async redirects() {

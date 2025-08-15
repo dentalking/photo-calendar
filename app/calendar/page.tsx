@@ -6,19 +6,48 @@ import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { Calendar, ChevronLeft, ChevronRight, Plus, Search, Filter, Grid3x3, List, CalendarDays, Settings } from 'lucide-react';
 import { useCalendarStore } from '@/lib/stores/calendar-store';
-import { CalendarView } from '@/components/calendar/calendar-view';
-import { EventModal } from '@/components/calendar/event-modal';
+import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card } from '@/components/ui/card';
-import { EventCard } from '@/components/ui/event-card';
-import { PhotoUpload } from '@/components/ui/photo-upload';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { LoadingIndicator } from '@/components/ui/loading-indicator';
 import { cn } from '@/lib/utils';
 import toast, { Toaster } from 'react-hot-toast';
-import { SyncProgress } from '@/components/calendar/sync-progress';
+
+// Lazy load heavy components
+const CalendarView = dynamic(
+  () => import('@/components/calendar/calendar-view').then(mod => mod.CalendarView),
+  { 
+    loading: () => (
+      <div className="flex items-center justify-center h-96">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
+      </div>
+    ),
+    ssr: false 
+  }
+);
+
+const EventModal = dynamic(
+  () => import('@/components/calendar/event-modal').then(mod => mod.EventModal),
+  { ssr: false }
+);
+
+const PhotoUpload = dynamic(
+  () => import('@/components/ui/photo-upload').then(mod => mod.PhotoUpload),
+  { ssr: false }
+);
+
+const SyncProgress = dynamic(
+  () => import('@/components/calendar/sync-progress').then(mod => mod.SyncProgress),
+  { ssr: false }
+);
+
+const EventCard = dynamic(
+  () => import('@/components/ui/event-card').then(mod => mod.EventCard),
+  { ssr: false }
+);
 
 // Helper function to get category color
 const getCategoryColor = (category: string): string => {
