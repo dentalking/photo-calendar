@@ -19,6 +19,15 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     
+    console.log('[Bidirectional Sync] Session debug:', {
+      hasSession: !!session,
+      hasUser: !!session?.user,
+      userId: session?.user?.id,
+      hasAccessToken: !!session?.accessToken,
+      hasRefreshToken: !!session?.refreshToken,
+      sessionError: session?.error
+    });
+    
     if (!session?.user?.id) {
       return ApiResponse.unauthorized('Authentication required');
     }
@@ -84,6 +93,15 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
+    
+    console.log('[Bidirectional Sync GET] Session debug:', {
+      hasSession: !!session,
+      hasUser: !!session?.user,
+      userId: session?.user?.id,
+      hasAccessToken: !!session?.accessToken,
+      hasRefreshToken: !!session?.refreshToken,
+      sessionError: session?.error
+    });
     
     if (!session?.user?.id) {
       return ApiResponse.unauthorized('Authentication required');
