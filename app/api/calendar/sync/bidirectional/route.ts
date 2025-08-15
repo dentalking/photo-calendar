@@ -3,7 +3,6 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth/auth-options';
 import { GoogleCalendarService } from '@/lib/services/google-calendar';
 import { CalendarSyncManager, ConflictResolutionStrategy } from '@/lib/services/calendar-sync-manager';
-import { ApiResponse } from '@/lib/middleware/auth';
 
 interface BidirectionalSyncRequest {
   timeMin?: string;
@@ -29,11 +28,17 @@ export async function POST(request: NextRequest) {
     });
     
     if (!session?.user?.id) {
-      return ApiResponse.unauthorized('Authentication required');
+      return NextResponse.json(
+        { success: false, error: 'Authentication required' },
+        { status: 401 }
+      );
     }
     
     if (!session?.accessToken) {
-      return ApiResponse.unauthorized('Google Calendar access token not found. Please re-authenticate.');
+      return NextResponse.json(
+        { success: false, error: 'Google Calendar access token not found. Please re-authenticate.' },
+        { status: 401 }
+      );
     }
 
     const body = await request.json() as BidirectionalSyncRequest;
@@ -48,7 +53,10 @@ export async function POST(request: NextRequest) {
     // Test connection first
     const isConnected = await googleService.testConnection();
     if (!isConnected) {
-      return ApiResponse.serviceUnavailable('Unable to connect to Google Calendar. Please re-authenticate.');
+      return NextResponse.json(
+        { success: false, error: 'Unable to connect to Google Calendar. Please re-authenticate.' },
+        { status: 503 }
+      );
     }
 
     // Initialize sync manager
@@ -66,14 +74,16 @@ export async function POST(request: NextRequest) {
 
     if (!syncResult.success && syncResult.conflicts.length > 0) {
       // Return conflicts for manual resolution
-      return ApiResponse.success({
+      return NextResponse.json({
+        success: true,
         ...syncResult,
         requiresManualResolution: true,
         message: `Sync partially completed with ${syncResult.conflicts.length} conflicts requiring manual resolution`,
       });
     }
 
-    return ApiResponse.success({
+    return NextResponse.json({
+      success: true,
       ...syncResult,
       message: syncResult.success 
         ? `Sync completed successfully: ${syncResult.created} created, ${syncResult.updated} updated, ${syncResult.deleted} deleted`
@@ -82,7 +92,10 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Bidirectional sync error:', error);
-    return ApiResponse.internalError('Failed to perform bidirectional sync');
+    return NextResponse.json(
+      { success: false, error: 'Failed to perform bidirectional sync' },
+      { status: 500 }
+    );
   }
 }
 
@@ -104,11 +117,17 @@ export async function GET(request: NextRequest) {
     });
     
     if (!session?.user?.id) {
-      return ApiResponse.unauthorized('Authentication required');
+      return NextResponse.json(
+        { success: false, error: 'Authentication required' },
+        { status: 401 }
+      );
     }
     
     if (!session?.accessToken) {
-      return ApiResponse.unauthorized('Google Calendar access token not found. Please re-authenticate.');
+      return NextResponse.json(
+        { success: false, error: 'Google Calendar access token not found. Please re-authenticate.' },
+        { status: 401 }
+      );
     }
 
     // Initialize Google Calendar service
@@ -126,13 +145,17 @@ export async function GET(request: NextRequest) {
     // Get sync status
     const status = await syncManager.getSyncStatus();
 
-    return ApiResponse.success({
+    return NextResponse.json({
+      success: true,
       ...status,
       isConnected: await googleService.testConnection(),
     });
 
   } catch (error) {
     console.error('Get sync status error:', error);
-    return ApiResponse.internalError('Failed to get sync status');
+    return NextResponse.json(
+      { success: false, error: 'Failed to get sync status' },
+      { status: 500 }
+    );
   }
 }
