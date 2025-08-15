@@ -52,28 +52,105 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       language: ocrResult.language
     })
     
-    // For now, just return the extracted text
-    // In the full implementation, this would go through AI analysis
+    // Enhanced Korean fallback parser
     const mockEvents = []
-    if (ocrResult.text && ocrResult.text.length > 10) {
-      // Parse the tech conference text
-      const lines = ocrResult.text.split('\n')
+    if (ocrResult.text && ocrResult.text.length > 5) {
+      const lines = ocrResult.text.split('\n').filter(line => line.trim().length > 0)
       const title = lines[0] || 'Extracted Event'
       
-      // Look for date pattern
-      const dateMatch = ocrResult.text.match(/(\w+)\s+(\d+),\s+(\d{4})/);
-      const timeMatch = ocrResult.text.match(/(\d+:\d+\s*[AP]M)\s*-\s*(\d+:\d+\s*[AP]M)/);
-      const locationMatch = ocrResult.text.match(/Location:\s*(.+)/i);
+      console.log('[Simple Extract] Korean Parser - Lines:', lines)
       
-      if (dateMatch || timeMatch) {
+      // Korean date pattern: 2025년 9월 15일
+      const koreanDatePattern = /(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일/
+      const koreanDateMatch = ocrResult.text.match(koreanDatePattern)
+      
+      // Korean time pattern: 오후 7시 30분, 오전 10시
+      const koreanTimePattern = /오후\s*(\d{1,2})시\s*(\d{1,2})분?|오전\s*(\d{1,2})시\s*(\d{1,2})분?|(\d{1,2}):(\d{2})/
+      const koreanTimeMatch = ocrResult.text.match(koreanTimePattern)
+      
+      // Korean location pattern: 잠실 올림픽공원 KSPO돔
+      const koreanLocationPattern = /(.*돔|.*경기장|.*센터|.*홀|.*극장|.*공원)/
+      const koreanLocationMatch = ocrResult.text.match(koreanLocationPattern)
+      
+      // English patterns (fallback)
+      const englishDateMatch = ocrResult.text.match(/(\w+)\s+(\d+),\s+(\d{4})/)
+      const englishTimeMatch = ocrResult.text.match(/(\d+:\d+\s*[AP]M)\s*-\s*(\d+:\d+\s*[AP]M)/)
+      const englishLocationMatch = ocrResult.text.match(/Location:\s*(.+)/i)
+      
+      let eventDate = new Date()
+      let startTime = '오후 2시'
+      let endTime = '오후 6시'
+      let location = ''
+      
+      // Process Korean date
+      if (koreanDateMatch) {
+        const year = parseInt(koreanDateMatch[1])
+        const month = parseInt(koreanDateMatch[2]) - 1
+        const day = parseInt(koreanDateMatch[3])
+        eventDate = new Date(year, month, day)
+        console.log('[Simple Extract] Korean date extracted:', `${year}-${month+1}-${day}`)
+      } else if (englishDateMatch) {
+        // Fallback to English date
+        eventDate = new Date(`${englishDateMatch[1]} ${englishDateMatch[2]}, ${englishDateMatch[3]}`)
+      }
+      
+      // Process Korean time
+      if (koreanTimeMatch) {
+        let hour = 0
+        let minute = 0
+        
+        if (koreanTimeMatch[1] && koreanTimeMatch[2]) { // 오후 format
+          hour = parseInt(koreanTimeMatch[1])
+          minute = parseInt(koreanTimeMatch[2]) || 0
+          if (hour !== 12) hour += 12
+          startTime = `${koreanTimeMatch[0]}`
+          console.log('[Simple Extract] Korean PM time extracted:', `${hour}:${minute}`)
+        } else if (koreanTimeMatch[3] && koreanTimeMatch[4]) { // 오전 format
+          hour = parseInt(koreanTimeMatch[3])
+          minute = parseInt(koreanTimeMatch[4]) || 0
+          if (hour === 12) hour = 0
+          startTime = `${koreanTimeMatch[0]}`
+          console.log('[Simple Extract] Korean AM time extracted:', `${hour}:${minute}`)
+        } else if (koreanTimeMatch[5] && koreanTimeMatch[6]) { // HH:MM format
+          hour = parseInt(koreanTimeMatch[5])
+          minute = parseInt(koreanTimeMatch[6])
+          startTime = `${hour}:${minute.toString().padStart(2, '0')}`
+          console.log('[Simple Extract] Korean 24-hour time extracted:', `${hour}:${minute}`)
+        }
+        
+        eventDate.setHours(hour, minute, 0, 0)
+      } else if (englishTimeMatch) {
+        startTime = englishTimeMatch[1]
+        endTime = englishTimeMatch[2]
+      }
+      
+      // Process Korean location
+      if (koreanLocationMatch) {
+        location = koreanLocationMatch[0]
+        console.log('[Simple Extract] Korean location extracted:', location)
+      } else if (englishLocationMatch) {
+        location = englishLocationMatch[1].trim()
+      }
+      
+      // Create event if we have enough information
+      if (koreanDateMatch || koreanTimeMatch || englishDateMatch || englishTimeMatch) {
         mockEvents.push({
-          title: title.replace(/[^a-zA-Z0-9\s]/g, '').trim(),
+          title: title,
           description: ocrResult.text,
-          date: dateMatch ? `${dateMatch[1]} ${dateMatch[2]}, ${dateMatch[3]}` : 'December 15, 2025',
-          startTime: timeMatch ? timeMatch[1] : '2:00 PM',
-          endTime: timeMatch ? timeMatch[2] : '6:00 PM',
-          location: locationMatch ? locationMatch[1].trim() : 'Extracted Location',
-          confidence: ocrResult.confidence
+          date: eventDate.toISOString().split('T')[0],
+          startTime: startTime,
+          endTime: endTime,
+          location: location || 'Extracted Location',
+          confidence: ocrResult.confidence,
+          isKorean: !!(koreanDateMatch || koreanTimeMatch || koreanLocationMatch)
+        })
+        
+        console.log('[Simple Extract] Event created:', {
+          title: title,
+          date: eventDate.toISOString().split('T')[0],
+          startTime: startTime,
+          location: location,
+          isKorean: !!(koreanDateMatch || koreanTimeMatch || koreanLocationMatch)
         })
       }
     }
