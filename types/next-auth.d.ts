@@ -10,6 +10,7 @@ declare module "next-auth" {
     accessToken?: string
     refreshToken?: string
     expiresAt?: number
+    error?: "RefreshTokenError"
   }
 
   interface User {
@@ -25,5 +26,6 @@ declare module "next-auth/jwt" {
     refreshToken?: string
     expiresAt?: number
     onboardingCompleted?: boolean
+    error?: "RefreshTokenError"
   }
 }
