@@ -124,6 +124,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           logs.push(`AI Analysis result: ${JSON.stringify(analysis, null, 2).substring(0, 500)}`)
           events = analysis.events || []
           logs.push(`✅ AI Analysis: Found ${events.length} events`)
+          
+          // If AI analysis succeeds but finds no events, use fallback
+          if (events.length === 0) {
+            logs.push(`⚠️ AI found no events, triggering enhanced fallback parser`)
+            throw new Error('No events found by AI, using fallback')
+          }
         } catch (aiError: any) {
           logs.push(`AI Service error: ${aiError.message}`)
           logs.push(`Error stack: ${aiError.stack?.substring(0, 500)}`)
