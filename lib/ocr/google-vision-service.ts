@@ -18,17 +18,24 @@ export class GoogleVisionService {
     this.config = { ...DEFAULT_OCR_CONFIG, ...config };
     
     // Setup Google Cloud credentials (handles Base64 decoding in production)
+    // This must succeed for the service to work
     try {
-      setupGoogleCloudCredentials();
+      const credPath = setupGoogleCloudCredentials();
+      console.log('Google Cloud credentials setup successful:', credPath);
     } catch (error) {
       console.error('Failed to setup Google Cloud credentials:', error);
+      throw new OCRError(
+        `Failed to setup Google Cloud credentials: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        'CREDENTIALS_ERROR',
+        false
+      );
     }
     
     // Initialize Google Vision client
     const clientConfig: any = {};
     
-    if (this.config.projectId) {
-      clientConfig.projectId = this.config.projectId;
+    if (this.config.projectId || process.env.GOOGLE_CLOUD_PROJECT) {
+      clientConfig.projectId = this.config.projectId || process.env.GOOGLE_CLOUD_PROJECT;
     }
     
     if (this.config.keyFilename) {
@@ -43,7 +50,9 @@ export class GoogleVisionService {
 
     try {
       this.client = new ImageAnnotatorClient(clientConfig);
+      console.log('Google Vision client initialized successfully');
     } catch (error) {
+      console.error('Failed to initialize Google Vision client:', error);
       throw new OCRError(
         `Failed to initialize Google Vision client: ${error instanceof Error ? error.message : 'Unknown error'}`,
         'INIT_ERROR',

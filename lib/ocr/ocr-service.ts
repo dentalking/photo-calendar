@@ -29,7 +29,17 @@ export class OCRService {
   constructor(config: Partial<OCRConfig> = {}) {
     this.config = { ...DEFAULT_OCR_CONFIG, ...config };
     this.preprocessor = new ImagePreprocessor();
-    this.visionService = new GoogleVisionService(this.config);
+    
+    // Try to initialize Vision Service, but don't fail if it doesn't work
+    try {
+      this.visionService = new GoogleVisionService(this.config);
+      console.log('OCRService: Vision service initialized successfully');
+    } catch (error) {
+      console.error('OCRService: Failed to initialize Vision service:', error);
+      // Vision service will be null, fallback will be used
+      this.visionService = null as any;
+    }
+    
     this.fallbackService = new FallbackOCRService(this.config);
   }
 
@@ -238,6 +248,16 @@ export class OCRService {
     options: any,
     attempt: number = 0
   ): Promise<OCRResult> {
+    // Check if Vision service is available
+    if (!this.visionService) {
+      console.warn('Vision service not available, using fallback');
+      throw new OCRError(
+        'Vision service not initialized',
+        'SERVICE_UNAVAILABLE',
+        false
+      );
+    }
+    
     try {
       const result = await this.visionService.extractText(imageBuffer, {
         useDocumentText: true,
