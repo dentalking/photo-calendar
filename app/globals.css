@@ -4,6 +4,11 @@
 
 @layer base {
   :root {
+    /* Animation durations */
+    --animation-fast: 150ms;
+    --animation-normal: 300ms;
+    --animation-slow: 500ms;
+    
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
     --card: 0 0% 100%;
@@ -139,12 +144,87 @@
   }
 }
 
+@keyframes slide-in-up {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slide-in-down {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes scale-in {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
 .animate-fade-in {
   animation: fade-in 0.2s ease-out;
 }
 
 .animate-slide-in {
   animation: slide-in 0.3s ease-out;
+}
+
+.animate-slide-in-up {
+  animation: slide-in-up 0.3s ease-out;
+}
+
+.animate-slide-in-down {
+  animation: slide-in-down 0.3s ease-out;
+}
+
+.animate-scale-in {
+  animation: scale-in 0.3s ease-out;
+}
+
+.animate-shimmer {
+  animation: shimmer 2s infinite;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.2) 20%,
+    rgba(255, 255, 255, 0.5) 60%,
+    rgba(255, 255, 255, 0)
+  );
+  background-size: 1000px 100%;
 }
 
 /* Photo upload specific styles */
@@ -154,4 +234,75 @@
 
 .upload-dropzone.drag-over {
   @apply border-primary bg-primary/5 scale-[1.02];
+}
+
+/* Mobile-optimized touch feedback */
+.touch-feedback {
+  transition: transform 0.1s ease;
+}
+
+.touch-feedback:active {
+  transform: scale(0.98);
+}
+
+/* Smooth transitions for interactions */
+.transition-smooth {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Calendar-specific animations */
+.calendar-month-transition {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.calendar-event-card {
+  transition: all 0.2s ease;
+}
+
+.calendar-event-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Photo upload animations */
+.photo-upload-preview {
+  animation: scale-in 0.3s ease-out;
+}
+
+.photo-upload-progress {
+  transition: width 0.3s ease;
+}
+
+/* Toast notification animations */
+.toast-enter {
+  animation: slide-in-up 0.3s ease-out;
+}
+
+.toast-exit {
+  animation: slide-in-down 0.3s ease-out reverse;
+}
+
+/* Mobile-specific optimizations */
+@media (max-width: 768px) {
+  html {
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Disable hover effects on touch devices */
+  @media (hover: none) {
+    .calendar-event-card:hover {
+      transform: none;
+      box-shadow: none;
+    }
+  }
+  
+  /* Faster animations on mobile */
+  .animate-fade-in,
+  .animate-slide-in,
+  .animate-slide-in-up,
+  .animate-slide-in-down,
+  .animate-scale-in {
+    animation-duration: 0.2s;
+  }
 }

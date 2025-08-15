@@ -1,6 +1,7 @@
 import * as React from "react"
-import { Upload, X, Image as ImageIcon, AlertCircle } from "lucide-react"
+import { Upload, X, Image as ImageIcon, AlertCircle, Camera, Smartphone, Loader2 } from "lucide-react"
 import { cn, formatFileSize, isValidImageType, generateId } from "@/lib/utils"
+import { ImageOptimizer } from "@/lib/utils/image-optimizer"
 import { Button } from "./button"
 import { Card } from "./card"
 
@@ -23,6 +24,12 @@ interface PhotoUploadProps {
   showPreview?: boolean
   dropzoneText?: string
   buttonText?: string
+  autoOptimize?: boolean
+  optimizationOptions?: {
+    maxWidth?: number
+    maxHeight?: number
+    quality?: number
+  }
 }
 
 const PhotoUpload = React.forwardRef<HTMLDivElement, PhotoUploadProps>(
@@ -43,7 +50,10 @@ const PhotoUpload = React.forwardRef<HTMLDivElement, PhotoUploadProps>(
     const [files, setFiles] = React.useState<UploadedFile[]>([])
     const [isDragOver, setIsDragOver] = React.useState(false)
     const [isUploading, setIsUploading] = React.useState(false)
+    const [isOptimizing, setIsOptimizing] = React.useState(false)
+    const [isMobile, setIsMobile] = React.useState(false)
     const fileInputRef = React.useRef<HTMLInputElement>(null)
+    const cameraInputRef = React.useRef<HTMLInputElement>(null)
 
     const validateFile = (file: File): string | null => {
       if (!isValidImageType(file)) {
@@ -69,10 +79,11 @@ const PhotoUpload = React.forwardRef<HTMLDivElement, PhotoUploadProps>(
       if (disabled) return
 
       setIsUploading(true)
+      setIsOptimizing(true)
       const newFiles: UploadedFile[] = []
 
       for (let i = 0; i < fileList.length; i++) {
-        const file = fileList[i]
+        let file = fileList[i]
         const error = validateFile(file)
         
         const uploadedFile: UploadedFile = {
@@ -138,6 +149,25 @@ const PhotoUpload = React.forwardRef<HTMLDivElement, PhotoUploadProps>(
       }
     }
 
+    const openCameraDialog = () => {
+      if (!disabled) {
+        cameraInputRef.current?.click()
+      }
+    }
+
+    // Detect mobile device
+    React.useEffect(() => {
+      const checkMobile = () => {
+        setIsMobile(
+          /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || 
+          window.innerWidth <= 768
+        )
+      }
+      checkMobile()
+      window.addEventListener('resize', checkMobile)
+      return () => window.removeEventListener('resize', checkMobile)
+    }, [])
+
     // Cleanup URLs on unmount
     React.useEffect(() => {
       return () => {
@@ -152,15 +182,16 @@ const PhotoUpload = React.forwardRef<HTMLDivElement, PhotoUploadProps>(
         {/* Drop Zone */}
         <Card
           className={cn(
-            "upload-dropzone relative border-2 border-dashed transition-all duration-200 cursor-pointer",
+            "upload-dropzone relative border-2 border-dashed transition-all duration-200",
             isDragOver ? "drag-over border-primary bg-primary/5" : "border-muted-foreground/25 hover:border-muted-foreground/50",
             disabled && "opacity-50 cursor-not-allowed",
-            "p-8 text-center"
+            "p-4 sm:p-8 text-center",
+            !isMobile && "cursor-pointer"
           )}
           onDrop={handleDrop}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
-          onClick={openFileDialog}
+          onClick={!isMobile ? openFileDialog : undefined}
           data-testid="dropzone"
         >
           <input
@@ -174,20 +205,39 @@ const PhotoUpload = React.forwardRef<HTMLDivElement, PhotoUploadProps>(
             data-testid="file-input"
           />
           
-          <div className="flex flex-col items-center justify-center space-y-4">
+          {/* Camera Input - Direct camera capture on mobile */}
+          <input
+            ref={cameraInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            onChange={handleFileSelect}
+            disabled={disabled}
+            className="sr-only"
+            data-testid="camera-input"
+          />
+          
+          <div className="flex flex-col items-center justify-center space-y-3 sm:space-y-4">
             <div className={cn(
-              "w-16 h-16 rounded-full flex items-center justify-center transition-colors",
+              "w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center transition-colors",
               isDragOver ? "bg-primary/10" : "bg-muted"
             )}>
-              <Upload className={cn(
-                "w-8 h-8",
-                isDragOver ? "text-primary" : "text-muted-foreground"
-              )} />
+              {isMobile ? (
+                <Camera className={cn(
+                  "w-6 h-6 sm:w-8 sm:h-8",
+                  isDragOver ? "text-primary" : "text-muted-foreground"
+                )} />
+              ) : (
+                <Upload className={cn(
+                  "w-6 h-6 sm:w-8 sm:h-8",
+                  isDragOver ? "text-primary" : "text-muted-foreground"
+                )} />
+              )}
             </div>
             
             <div className="space-y-2">
-              <p className="text-sm font-medium text-foreground">
-                {dropzoneText}
+              <p className="text-sm font-medium text-foreground px-2">
+                {isMobile ? "사진을 선택하거나 촬영하세요" : dropzoneText}
               </p>
               <p className="text-xs text-muted-foreground">
                 {acceptedFileTypes.map(type => type.split('/')[1].toUpperCase()).join(', ')} 
@@ -195,22 +245,61 @@ const PhotoUpload = React.forwardRef<HTMLDivElement, PhotoUploadProps>(
               </p>
             </div>
             
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={disabled || isUploading}
-              className="pointer-events-none"
-              data-testid="upload-button"
-            >
-              {isUploading ? (
-                <div className="flex items-center gap-2">
-                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-current border-t-transparent" />
-                  업로드 중...
-                </div>
+            {/* Button Container - Responsive Layout */}
+            <div className="flex flex-col sm:flex-row gap-2 w-full px-4 sm:px-0 sm:w-auto">
+              {isMobile ? (
+                <>
+                  {/* Camera Button - Primary on mobile */}
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      openCameraDialog()
+                    }}
+                    disabled={disabled || isUploading}
+                    className="w-full sm:w-auto"
+                    data-testid="camera-button"
+                  >
+                    <Camera className="h-4 w-4 mr-2" />
+                    카메라 촬영
+                  </Button>
+                  
+                  {/* Gallery Button - Secondary on mobile */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      openFileDialog()
+                    }}
+                    disabled={disabled || isUploading}
+                    className="w-full sm:w-auto"
+                    data-testid="gallery-button"
+                  >
+                    <ImageIcon className="h-4 w-4 mr-2" />
+                    갤러리에서 선택
+                  </Button>
+                </>
               ) : (
-                buttonText
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={disabled || isUploading}
+                  className="pointer-events-none"
+                  data-testid="upload-button"
+                >
+                  {isUploading ? (
+                    <div className="flex items-center gap-2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-current border-t-transparent" />
+                      업로드 중...
+                    </div>
+                  ) : (
+                    buttonText
+                  )}
+                </Button>
               )}
-            </Button>
+            </div>
           </div>
         </Card>
 
@@ -221,7 +310,7 @@ const PhotoUpload = React.forwardRef<HTMLDivElement, PhotoUploadProps>(
               업로드된 파일 ({files.length})
             </h3>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
               {files.map((uploadedFile) => (
                 <Card
                   key={uploadedFile.id}
@@ -247,10 +336,10 @@ const PhotoUpload = React.forwardRef<HTMLDivElement, PhotoUploadProps>(
                     )}
                   </div>
                   
-                  <div className="p-3 space-y-2">
+                  <div className="p-2 sm:p-3 space-y-1 sm:space-y-2">
                     <div className="flex items-start justify-between">
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium truncate" title={uploadedFile.file.name}>
+                        <p className="text-xs sm:text-sm font-medium truncate" title={uploadedFile.file.name}>
                           {uploadedFile.file.name}
                         </p>
                         <p className="text-xs text-muted-foreground">
@@ -261,11 +350,11 @@ const PhotoUpload = React.forwardRef<HTMLDivElement, PhotoUploadProps>(
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 shrink-0"
+                        className="h-6 w-6 sm:h-8 sm:w-8 shrink-0"
                         onClick={() => removeFile(uploadedFile.id)}
                         data-testid={`remove-file-${uploadedFile.id}`}
                       >
-                        <X className="w-4 h-4" />
+                        <X className="w-3 h-3 sm:w-4 sm:h-4" />
                         <span className="sr-only">파일 삭제</span>
                       </Button>
                     </div>

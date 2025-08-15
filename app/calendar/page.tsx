@@ -15,6 +15,7 @@ import { Card } from '@/components/ui/card';
 import { EventCard } from '@/components/ui/event-card';
 import { PhotoUpload } from '@/components/ui/photo-upload';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { LoadingIndicator } from '@/components/ui/loading-indicator';
 import { cn } from '@/lib/utils';
 import toast, { Toaster } from 'react-hot-toast';
 import { SyncProgress } from '@/components/calendar/sync-progress';
@@ -32,9 +33,18 @@ const getCategoryColor = (category: string): string => {
   return colors[category] || 'bg-gray-500';
 };
 
+type ProcessingStep = 'upload' | 'ocr' | 'analysis' | 'complete' | 'error';
+
+interface ProcessingStatus {
+  step: ProcessingStep;
+  progress?: number;
+  error?: string;
+}
+
 export default function CalendarPage() {
   const router = useRouter();
   const [showSyncProgress, setShowSyncProgress] = useState(false);
+  const [processingFiles, setProcessingFiles] = useState<Map<string, ProcessingStatus>>(new Map());
   
   const {
     currentView,
@@ -78,6 +88,11 @@ export default function CalendarPage() {
     
     // Process each file
     for (const file of actualFiles) {
+      const fileId = file.name;
+      
+      // Update processing state - Upload step
+      setProcessingFiles(prev => new Map(prev).set(fileId, { step: 'upload', progress: 0 }));
+      
       const formData = new FormData();
       formData.append('file', file);
       formData.append('options', JSON.stringify({
@@ -88,46 +103,110 @@ export default function CalendarPage() {
         defaultColor: '#3B82F6'
       }));
       
-      toast.loading(`${file.name} 처리 중...`, { id: file.name });
-      
       try {
+        // Simulate upload progress
+        setTimeout(() => {
+          setProcessingFiles(prev => new Map(prev).set(fileId, { step: 'upload', progress: 50 }));
+        }, 300);
+        
         const response = await fetch('/api/photo/simple-extract', {
           method: 'POST',
           body: formData,
         });
         
+        // Update to OCR step
+        setProcessingFiles(prev => new Map(prev).set(fileId, { step: 'ocr', progress: 30 }));
+        
+        // Simulate OCR progress
+        await new Promise(resolve => setTimeout(resolve, 800));
+        setProcessingFiles(prev => new Map(prev).set(fileId, { step: 'ocr', progress: 70 }));
+        
+        // Update to analysis step
+        setProcessingFiles(prev => new Map(prev).set(fileId, { step: 'analysis', progress: 30 }));
+        
         const data = await response.json();
         
+        // Simulate analysis progress
+        await new Promise(resolve => setTimeout(resolve, 500));
+        setProcessingFiles(prev => new Map(prev).set(fileId, { step: 'analysis', progress: 80 }));
+        
         if (data.success) {
+          // Mark as complete
+          setProcessingFiles(prev => new Map(prev).set(fileId, { step: 'complete' }));
+          
           if (data.eventsCreated > 0) {
             toast.success(
               `${file.name}: ${data.eventsCreated}개 일정 추출 완료!`, 
-              { id: file.name, duration: 3000 }
+              { duration: 3000 }
             );
           } else {
             toast(
               `${file.name}: 일정을 찾을 수 없습니다`, 
-              { id: file.name, duration: 3000 }
+              { duration: 3000 }
             );
           }
+          
+          // Remove from processing after delay
+          setTimeout(() => {
+            setProcessingFiles(prev => {
+              const newMap = new Map(prev);
+              newMap.delete(fileId);
+              return newMap;
+            });
+          }, 3000);
         } else {
+          // Mark as error
+          setProcessingFiles(prev => new Map(prev).set(fileId, { 
+            step: 'error', 
+            error: data.error || '처리 실패' 
+          }));
+          
           toast.error(
             `${file.name}: ${data.error || '처리 실패'}`, 
-            { id: file.name, duration: 4000 }
+            { duration: 4000 }
           );
+          
+          // Remove from processing after delay
+          setTimeout(() => {
+            setProcessingFiles(prev => {
+              const newMap = new Map(prev);
+              newMap.delete(fileId);
+              return newMap;
+            });
+          }, 5000);
         }
       } catch (error) {
         console.error('Photo upload error:', error);
+        
+        // Mark as error
+        setProcessingFiles(prev => new Map(prev).set(fileId, { 
+          step: 'error', 
+          error: '업로드 중 오류 발생' 
+        }));
+        
         toast.error(
           `${file.name}: 업로드 중 오류 발생`, 
-          { id: file.name, duration: 4000 }
+          { duration: 4000 }
         );
+        
+        // Remove from processing after delay
+        setTimeout(() => {
+          setProcessingFiles(prev => {
+            const newMap = new Map(prev);
+            newMap.delete(fileId);
+            return newMap;
+          });
+        }, 5000);
       }
     }
     
     // Refresh events after all uploads complete
     await fetchEvents();
-    closeCreateModal();
+    
+    // Only close modal if no files are processing
+    if (processingFiles.size === 0) {
+      setTimeout(() => closeCreateModal(), 1000);
+    }
   };
 
   const handleGoogleCalendarSync = () => {
@@ -362,18 +441,34 @@ export default function CalendarPage() {
 
       {/* Create Event Modal */}
       <Dialog open={isCreateModalOpen} onOpenChange={closeCreateModal}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>새 일정 추가</DialogTitle>
           </DialogHeader>
           
           <div className="space-y-6">
+            {/* Processing Indicators */}
+            {processingFiles.size > 0 && (
+              <div className="space-y-3">
+                {Array.from(processingFiles.entries()).map(([fileName, status]) => (
+                  <LoadingIndicator
+                    key={fileName}
+                    currentStep={status.step}
+                    fileName={fileName}
+                    progress={status.progress}
+                    error={status.error}
+                  />
+                ))}
+              </div>
+            )}
+            
             <div>
               <h3 className="text-sm font-medium mb-2">사진에서 일정 추출</h3>
               <PhotoUpload
                 onFilesChange={handlePhotoUpload}
-                maxFiles={1}
+                maxFiles={5}
                 acceptedFileTypes={['image/jpeg', 'image/png', 'image/gif', 'image/webp']}
+                disabled={processingFiles.size > 0}
               />
             </div>
             

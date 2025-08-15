@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useRef } from 'react'
 import { useCalendarStore } from '@/lib/stores/calendar-store'
 import { MonthView } from './views/month-view'
 import { WeekView } from './views/week-view'
@@ -8,6 +8,7 @@ import { DayView } from './views/day-view'
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent } from '@dnd-kit/core'
 import { EventCard } from '@/components/ui/event-card'
 import { useToast } from '@/lib/hooks/use-toast'
+import { useTouchGestures } from '@/lib/hooks/use-touch-gestures'
 
 export function CalendarView() {
   const { 
@@ -16,9 +17,11 @@ export function CalendarView() {
     setDraggedEvent, 
     moveEvent, 
     updateEvent,
-    isLoading 
+    isLoading,
+    navigateMonth 
   } = useCalendarStore()
   const { toast } = useToast()
+  const calendarRef = useRef<HTMLDivElement>(null)
 
   const handleDragStart = (event: DragStartEvent) => {
     const eventData = event.active.data.current?.event
@@ -55,6 +58,32 @@ export function CalendarView() {
     setDraggedEvent(undefined)
   }
 
+  // Touch gesture handlers for mobile navigation
+  const { isGesturing } = useTouchGestures(calendarRef, {
+    onSwipeLeft: () => {
+      // Navigate to next period
+      if (currentView === 'month' || currentView === 'week') {
+        navigateMonth('next')
+        toast({
+          title: '다음 달로 이동',
+          duration: 1000,
+        })
+      }
+    },
+    onSwipeRight: () => {
+      // Navigate to previous period
+      if (currentView === 'month' || currentView === 'week') {
+        navigateMonth('prev')
+        toast({
+          title: '이전 달로 이동',
+          duration: 1000,
+        })
+      }
+    },
+    threshold: 50,
+    enabled: true
+  })
+
   const renderView = () => {
     switch (currentView) {
       case 'month':
@@ -84,7 +113,11 @@ export function CalendarView() {
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <div className="flex-1 overflow-auto">
+      <div 
+        ref={calendarRef}
+        className="flex-1 overflow-auto touch-pan-y"
+        style={{ touchAction: isGesturing ? 'none' : 'pan-y' }}
+      >
         {renderView()}
       </div>
       
