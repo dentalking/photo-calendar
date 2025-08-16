@@ -49,459 +49,337 @@ interface CalendarState {
   // Filters
   filters: CalendarFilter;
   
-  // UI state
+  // Modals
   isEventModalOpen: boolean;
   isCreateModalOpen: boolean;
   showEventModal: boolean;
+  
+  // Drag and drop
   isDragging: boolean;
-  draggedEvent: CalendarEvent | undefined;
-  setDraggedEvent: (event: CalendarEvent | undefined) => void;
+  draggedEvent?: CalendarEvent;
   
   // Actions
   setView: (view: ViewType) => void;
   setCurrentDate: (date: Date) => void;
-  navigateMonth: (direction: 'prev' | 'next') => void;
+  navigateMonth: (direction: 'next' | 'prev') => void;
   selectDate: (date: Date | null) => void;
   selectEvent: (event: CalendarEvent | null) => void;
-  
-  // Event actions
   fetchEvents: (startDate?: Date, endDate?: Date) => Promise<void>;
-  createEvent: (event: Partial<CalendarEvent>) => Promise<void>;
-  updateEvent: (id: string, updates: Partial<CalendarEvent>) => Promise<void>;
-  deleteEvent: (id: string) => Promise<void>;
-  moveEvent: (eventId: string, newStartTime: Date, newEndTime?: Date) => Promise<void>;
-  
-  // Filter actions
+  addEvent: (event: Partial<CalendarEvent>) => Promise<{ success: boolean; event: CalendarEvent | null }>;
+  updateEvent: (id: string, updates: Partial<CalendarEvent>) => Promise<{ success: boolean }>;
+  deleteEvent: (id: string) => Promise<{ success: boolean }>;
   setFilters: (filters: Partial<CalendarFilter>) => void;
   clearFilters: () => void;
-  searchEvents: (query: string) => void;
-  
-  // UI actions
-  openEventModal: (event?: any) => void;
-  closeEventModal: () => void;
-  openCreateModal: (date?: Date) => void;
-  closeCreateModal: () => void;
-  startDragging: (event: CalendarEvent) => void;
-  stopDragging: () => void;
-  duplicateEvent: (eventId: string) => void;
-  
-  // Utility
-  getEventsForDate: (date: Date) => any[];
-  getEventsForMonth: (date: Date) => any[];
-  getFilteredEvents: () => any[];
+  setEventModalOpen: (isOpen: boolean) => void;
+  setCreateModalOpen: (isOpen: boolean) => void;
+  setSelectedEvent: (event: any) => void;
+  setShowEventModal: (show: boolean) => void;
+  setIsDragging: (isDragging: boolean) => void;
+  setDraggedEvent: (event: CalendarEvent | undefined) => void;
+  setEvents: (events: CalendarEvent[]) => void;
+  clearError: () => void;
 }
 
 const initialFilters: CalendarFilter = {
-  categories: ['work', 'personal', 'health', 'education', 'social', 'other'],
+  categories: [],
   searchQuery: '',
   showOnlyConfirmed: false,
 };
 
-export const useCalendarStore = create<CalendarState>()(
-  devtools(
-    persist(
-      (set, get) => ({
-        // Initial state
-        currentView: 'month',
-        currentDate: new Date(),
-        selectedDate: null,
-        selectedEvent: null,
-        events: [],
-        loading: false,
-        isLoading: false,
-        error: null,
-        filters: initialFilters,
-        isEventModalOpen: false,
-        isCreateModalOpen: false,
-        showEventModal: false,
-        isDragging: false,
-        draggedEvent: undefined,
-        setDraggedEvent: (event) => set({ draggedEvent: event }),
+// Create the store with SSR safety
+const storeCreator = (set: any, get: any) => ({
+  // Initial state
+  currentView: 'month' as ViewType,
+  currentDate: new Date(),
+  selectedDate: null,
+  selectedEvent: null,
+  events: [],
+  loading: false,
+  isLoading: false,
+  error: null,
+  filters: initialFilters,
+  isEventModalOpen: false,
+  isCreateModalOpen: false,
+  showEventModal: false,
+  isDragging: false,
+  draggedEvent: undefined,
+  setDraggedEvent: (event: CalendarEvent | undefined) => set({ draggedEvent: event }),
 
-        // View actions
-        setView: (view) => set({ currentView: view }),
-        
-        setCurrentDate: (date) => set({ currentDate: date }),
-        
-        navigateMonth: (direction) => {
-          const { currentDate } = get();
-          const newDate = direction === 'next' 
-            ? addMonths(currentDate, 1)
-            : subMonths(currentDate, 1);
-          set({ currentDate: newDate });
-          get().fetchEvents(startOfMonth(newDate), endOfMonth(newDate));
-        },
-        
-        selectDate: (date) => set({ selectedDate: date }),
-        
-        selectEvent: (event) => set({ selectedEvent: event }),
+  // View actions
+  setView: (view: ViewType) => set({ currentView: view }),
+  
+  setCurrentDate: (date: Date) => set({ currentDate: date }),
+  
+  navigateMonth: (direction: 'next' | 'prev') => {
+    const { currentDate } = get();
+    const newDate = direction === 'next' 
+      ? addMonths(currentDate, 1)
+      : subMonths(currentDate, 1);
+    set({ currentDate: newDate });
+    get().fetchEvents(startOfMonth(newDate), endOfMonth(newDate));
+  },
+  
+  selectDate: (date: Date | null) => set({ selectedDate: date }),
+  
+  selectEvent: (event: CalendarEvent | null) => set({ selectedEvent: event }),
 
-        // Event actions
-        fetchEvents: async (startDate, endDate) => {
-          set({ loading: true, isLoading: true, error: null });
-          
-          try {
-            const start = startDate || startOfMonth(get().currentDate);
-            const end = endDate || endOfMonth(get().currentDate);
-            
-            const params = new URLSearchParams({
-              startDate: start.toISOString(),
-              endDate: end.toISOString(),
-            });
-            
-            const response = await fetch(`/api/events?${params}`, {
-              credentials: 'include',
-            });
-            
-            if (!response.ok) {
-              if (response.status === 401) {
-                // Redirect to login if unauthorized
-                window.location.href = '/auth/signin?callbackUrl=' + encodeURIComponent(window.location.pathname);
-                return;
-              }
-              const errorData = await response.json().catch(() => ({}));
-              throw new Error(errorData.message || 'Failed to fetch events');
-            }
-            
-            const result = await response.json();
-            
-            // Handle the response structure from ApiResponse.success()
-            const eventsData = result.data?.events || result.events || [];
-            
-            // Convert date strings to Date objects
-            const events = eventsData.map((event: any) => ({
-              ...event,
-              startDate: new Date(event.startDate),
-              endDate: event.endDate ? new Date(event.endDate) : undefined,
-              createdAt: new Date(event.createdAt),
-              updatedAt: new Date(event.updatedAt),
-            }));
-            
-            set({ events, loading: false, isLoading: false });
-          } catch (error) {
-            console.error('Error fetching events:', error);
-            set({ 
-              error: error instanceof Error ? error.message : 'Failed to fetch events',
-              loading: false,
-              isLoading: false 
-            });
-          }
-        },
-
-        createEvent: async (eventData) => {
-          set({ loading: true, error: null });
-          
-          try {
-            const response = await fetch('/api/events', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              credentials: 'include',
-              body: JSON.stringify(eventData),
-            });
-            
-            if (!response.ok) {
-              if (response.status === 401) {
-                window.location.href = '/auth/signin?callbackUrl=' + encodeURIComponent(window.location.pathname);
-                return;
-              }
-              const errorData = await response.json().catch(() => ({}));
-              throw new Error(errorData.message || 'Failed to create event');
-            }
-            
-            const newEvent = await response.json();
-            
-            // Convert dates
-            newEvent.startTime = new Date(newEvent.startTime);
-            if (newEvent.endTime) {
-              newEvent.endTime = new Date(newEvent.endTime);
-            }
-            newEvent.createdAt = new Date(newEvent.createdAt);
-            newEvent.updatedAt = new Date(newEvent.updatedAt);
-            
-            set((state) => ({
-              events: [...state.events, newEvent],
-              loading: false,
-              isCreateModalOpen: false,
-            }));
-          } catch (error) {
-            console.error('Error creating event:', error);
-            set({ 
-              error: error instanceof Error ? error.message : 'Failed to create event',
-              loading: false 
-            });
-          }
-        },
-
-        updateEvent: async (id, updates) => {
-          set({ loading: true, error: null });
-          
-          try {
-            const response = await fetch(`/api/events/${id}`, {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
-              credentials: 'include',
-              body: JSON.stringify(updates),
-            });
-            
-            if (!response.ok) {
-              throw new Error('Failed to update event');
-            }
-            
-            const updatedEvent = await response.json();
-            
-            // Convert dates
-            updatedEvent.startTime = new Date(updatedEvent.startTime);
-            if (updatedEvent.endTime) {
-              updatedEvent.endTime = new Date(updatedEvent.endTime);
-            }
-            updatedEvent.createdAt = new Date(updatedEvent.createdAt);
-            updatedEvent.updatedAt = new Date(updatedEvent.updatedAt);
-            
-            set((state) => ({
-              events: state.events.map(event => 
-                event.id === id ? updatedEvent : event
-              ),
-              loading: false,
-              isEventModalOpen: false,
-            }));
-          } catch (error) {
-            console.error('Error updating event:', error);
-            set({ 
-              error: error instanceof Error ? error.message : 'Failed to update event',
-              loading: false 
-            });
-          }
-        },
-
-        deleteEvent: async (id) => {
-          set({ loading: true, error: null });
-          
-          try {
-            const response = await fetch(`/api/events/${id}`, {
-              method: 'DELETE',
-              credentials: 'include',
-            });
-            
-            if (!response.ok) {
-              throw new Error('Failed to delete event');
-            }
-            
-            set((state) => ({
-              events: state.events.filter(event => event.id !== id),
-              loading: false,
-              isEventModalOpen: false,
-              selectedEvent: null,
-            }));
-          } catch (error) {
-            console.error('Error deleting event:', error);
-            set({ 
-              error: error instanceof Error ? error.message : 'Failed to delete event',
-              loading: false 
-            });
-          }
-        },
-
-        moveEvent: async (eventId, newStartTime, newEndTime) => {
-          const event = get().events.find(e => e.id === eventId);
-          if (!event) return;
-          
-          const duration = event.endTime && event.startTime
-            ? event.endTime.getTime() - event.startTime.getTime()
-            : 0;
-          
-          const endTime = newEndTime || (duration > 0 
-            ? new Date(newStartTime.getTime() + duration)
-            : undefined);
-          
-          // Update the event in the store immediately for optimistic UI
-          set((state) => ({
-            events: state.events.map(e => 
-              e.id === eventId 
-                ? { ...e, startTime: newStartTime, endTime }
-                : e
-            )
-          }));
-          
-          // Then update on server
-          try {
-            await get().updateEvent(eventId, {
-              startTime: newStartTime,
-              endTime,
-            });
-          } catch (error) {
-            // Revert on error
-            await get().fetchEvents();
-            throw error;
-          }
-        },
-
-        // Filter actions
-        setFilters: (filters) => {
-          set((state) => ({
-            filters: { ...state.filters, ...filters }
-          }));
-        },
-        
-        clearFilters: () => {
-          set({ filters: initialFilters });
-        },
-        
-        searchEvents: (query) => {
-          set((state) => ({
-            filters: { ...state.filters, searchQuery: query }
-          }));
-        },
-
-        // UI actions
-        openEventModal: (event) => {
-          const convertedEvent = event ? {
-            ...event,
-            startDate: event.startDate || event.startTime,
-            endDate: event.endDate || event.endTime,
-            status: event.status || (event.confidence && event.confidence >= 0.8 ? 'CONFIRMED' : 'PENDING'),
-            confidenceScore: event.confidenceScore || event.confidence || 1,
-            createdAt: event.createdAt || new Date(),
-            updatedAt: event.updatedAt || new Date(),
-            isVisible: event.isVisible !== undefined ? event.isVisible : true,
-            isUserVerified: event.isUserVerified || false,
-          } : null;
-          
-          set({ 
-            isEventModalOpen: true,
-            showEventModal: true,
-            selectedEvent: convertedEvent,
-          });
-        },
-        
-        closeEventModal: () => {
-          set({ 
-            isEventModalOpen: false,
-            showEventModal: false,
-            selectedEvent: null,
-          });
-        },
-        
-        openCreateModal: (date) => {
-          set({ 
-            isCreateModalOpen: true,
-            selectedDate: date || null,
-          });
-        },
-        
-        closeCreateModal: () => {
-          set({ isCreateModalOpen: false });
-        },
-        
-        startDragging: (event) => {
-          set({ isDragging: true, draggedEvent: event });
-        },
-        
-        stopDragging: () => {
-          set({ isDragging: false, draggedEvent: undefined });
-        },
-        
-        duplicateEvent: (eventId) => {
-          const { events } = get();
-          const eventToDuplicate = events.find(e => e.id === eventId);
-          
-          if (eventToDuplicate) {
-            const newEvent = {
-              ...eventToDuplicate,
-              id: `${eventId}-copy-${Date.now()}`,
-              title: `${eventToDuplicate.title} (복사본)`,
-              createdAt: new Date(),
-              updatedAt: new Date(),
-            };
-            
-            set((state) => ({
-              events: [...state.events, newEvent],
-            }));
-          }
-        },
-
-        // Utility functions
-        getEventsForDate: (date) => {
-          const { events } = get();
-          return events.filter(event => {
-            const eventDate = format(event.startTime, 'yyyy-MM-dd');
-            const targetDate = format(date, 'yyyy-MM-dd');
-            return eventDate === targetDate;
-          }).map(event => ({
-            ...event,
-            startDate: event.startTime,
-            endDate: event.endTime,
-            status: event.confidence && event.confidence >= 0.8 ? 'CONFIRMED' : 'PENDING',
-            confidenceScore: event.confidence || 1,
-          }));
-        },
-        
-        getEventsForMonth: (date) => {
-          const { events } = get();
-          const start = startOfMonth(date);
-          const end = endOfMonth(date);
-          
-          return events.filter(event => {
-            return event.startTime >= start && event.startTime <= end;
-          }).map(event => ({
-            ...event,
-            startDate: event.startTime,
-            endDate: event.endTime,
-            status: event.confidence && event.confidence >= 0.8 ? 'CONFIRMED' : 'PENDING',
-            confidenceScore: event.confidence || 1,
-          }));
-        },
-        
-        getFilteredEvents: () => {
-          const { events, filters } = get();
-          
-          return events.filter(event => {
-            // Category filter
-            if (!filters.categories.includes(event.category)) {
-              return false;
-            }
-            
-            // Search filter
-            if (filters.searchQuery) {
-              const query = filters.searchQuery.toLowerCase();
-              const matchesTitle = event.title.toLowerCase().includes(query);
-              const matchesLocation = event.location?.toLowerCase().includes(query);
-              const matchesDescription = event.description?.toLowerCase().includes(query);
-              
-              if (!matchesTitle && !matchesLocation && !matchesDescription) {
-                return false;
-              }
-            }
-            
-            // Date range filter
-            if (filters.startDate && event.startTime < filters.startDate) {
-              return false;
-            }
-            if (filters.endDate && event.startTime > filters.endDate) {
-              return false;
-            }
-            
-            // Confidence filter
-            if (filters.showOnlyConfirmed && event.confidence && event.confidence < 0.8) {
-              return false;
-            }
-            
-            return true;
-          }).map(event => ({
-            ...event,
-            startDate: event.startTime,
-            endDate: event.endTime,
-            status: event.confidence && event.confidence >= 0.8 ? 'CONFIRMED' : 'PENDING',
-            confidenceScore: event.confidence || 1,
-          }));
-        },
-      }),
-      {
-        name: 'calendar-storage',
-        partialize: (state) => ({
-          currentView: state.currentView,
-          filters: state.filters,
-        }),
+  // Event actions
+  fetchEvents: async (startDate?: Date, endDate?: Date) => {
+    set({ loading: true, isLoading: true, error: null });
+    
+    try {
+      const start = startDate || startOfMonth(get().currentDate);
+      const end = endDate || endOfMonth(get().currentDate);
+      
+      const params = new URLSearchParams({
+        startDate: start.toISOString(),
+        endDate: end.toISOString(),
+      });
+      
+      const response = await fetch(`/api/events?${params}`, {
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch events');
       }
-    )
-  )
+      
+      const data = await response.json();
+      
+      // Convert date strings to Date objects
+      const events = data.map((event: any) => ({
+        ...event,
+        startTime: new Date(event.startTime),
+        endTime: event.endTime ? new Date(event.endTime) : undefined,
+        createdAt: new Date(event.createdAt),
+        updatedAt: new Date(event.updatedAt),
+      }));
+      
+      set({ events, loading: false, isLoading: false });
+    } catch (error) {
+      console.error('Error fetching events:', error);
+      set({ 
+        error: error instanceof Error ? error.message : 'Failed to fetch events',
+        loading: false,
+        isLoading: false
+      });
+    }
+  },
+  
+  addEvent: async (eventData: Partial<CalendarEvent>) => {
+    set({ loading: true, error: null });
+    
+    try {
+      const response = await fetch('/api/events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(eventData),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to create event');
+      }
+      
+      const newEvent = await response.json();
+      
+      // Convert dates
+      newEvent.startTime = new Date(newEvent.startTime);
+      if (newEvent.endTime) {
+        newEvent.endTime = new Date(newEvent.endTime);
+      }
+      newEvent.createdAt = new Date(newEvent.createdAt);
+      newEvent.updatedAt = new Date(newEvent.updatedAt);
+      
+      set((state: CalendarState) => ({
+        events: [...state.events, newEvent],
+        loading: false,
+      }));
+      
+      return { success: true, event: newEvent };
+    } catch (error) {
+      console.error('Error adding event:', error);
+      set({ 
+        error: error instanceof Error ? error.message : 'Failed to add event',
+        loading: false 
+      });
+      return { success: false, event: null };
+    }
+  },
+  
+  updateEvent: async (id: string, updates: Partial<CalendarEvent>) => {
+    set({ loading: true, error: null });
+    
+    try {
+      const response = await fetch(`/api/events/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(updates),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to update event');
+      }
+      
+      const updatedEvent = await response.json();
+      
+      // Convert dates
+      updatedEvent.startTime = new Date(updatedEvent.startTime);
+      if (updatedEvent.endTime) {
+        updatedEvent.endTime = new Date(updatedEvent.endTime);
+      }
+      updatedEvent.createdAt = new Date(updatedEvent.createdAt);
+      updatedEvent.updatedAt = new Date(updatedEvent.updatedAt);
+      
+      set((state: CalendarState) => ({
+        events: state.events.map(event => 
+          event.id === id ? updatedEvent : event
+        ),
+        loading: false,
+      }));
+      
+      return { success: true };
+    } catch (error) {
+      console.error('Error updating event:', error);
+      set({ 
+        error: error instanceof Error ? error.message : 'Failed to update event',
+        loading: false 
+      });
+      return { success: false };
+    }
+  },
+  
+  deleteEvent: async (id: string) => {
+    set({ loading: true, error: null });
+    
+    try {
+      const response = await fetch(`/api/events/${id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to delete event');
+      }
+      
+      set((state: CalendarState) => ({
+        events: state.events.filter(event => event.id !== id),
+        loading: false,
+        selectedEvent: null,
+      }));
+      
+      return { success: true };
+    } catch (error) {
+      console.error('Error deleting event:', error);
+      set({ 
+        error: error instanceof Error ? error.message : 'Failed to delete event',
+        loading: false 
+      });
+      return { success: false };
+    }
+  },
+  
+  // Filter actions
+  setFilters: (filters: Partial<CalendarFilter>) => {
+    set((state: CalendarState) => ({
+      filters: { ...state.filters, ...filters }
+    }));
+  },
+  
+  clearFilters: () => set({ filters: initialFilters }),
+  
+  // Modal actions
+  setEventModalOpen: (isOpen: boolean) => set({ isEventModalOpen: isOpen }),
+  setCreateModalOpen: (isOpen: boolean) => set({ isCreateModalOpen: isOpen }),
+  setSelectedEvent: (event: any) => set({ selectedEvent: event }),
+  setShowEventModal: (show: boolean) => set({ showEventModal: show }),
+  
+  // Drag and drop actions
+  setIsDragging: (isDragging: boolean) => set({ isDragging }),
+  
+  // Direct state updates
+  setEvents: (events: CalendarEvent[]) => set({ events }),
+  clearError: () => set({ error: null }),
+  
+  // Computed values (as getter functions to avoid SSR issues)
+  getFilteredEvents: () => {
+    const state = get();
+    return state.events.filter((event: CalendarEvent) => {
+      // Category filter
+      if (state.filters.categories.length > 0 && 
+          !state.filters.categories.includes(event.category)) {
+        return false;
+      }
+      
+      // Search filter
+      if (state.filters.searchQuery) {
+        const query = state.filters.searchQuery.toLowerCase();
+        const matchesSearch = 
+          event.title.toLowerCase().includes(query) ||
+          event.description?.toLowerCase().includes(query) ||
+          event.location?.toLowerCase().includes(query);
+        
+        if (!matchesSearch) return false;
+      }
+      
+      // Date range filter
+      if (state.filters.startDate && event.startTime < state.filters.startDate) {
+        return false;
+      }
+      if (state.filters.endDate && event.startTime > state.filters.endDate) {
+        return false;
+      }
+      
+      // Confidence filter
+      if (state.filters.showOnlyConfirmed && 
+          event.confidence && event.confidence < 0.8) {
+        return false;
+      }
+      
+      return true;
+    }).map((event: CalendarEvent) => ({
+      ...event,
+      startDate: event.startTime,
+      endDate: event.endTime,
+      status: event.confidence && event.confidence >= 0.8 ? 'CONFIRMED' : 'PENDING',
+      confidenceScore: event.confidence || 1,
+    }));
+  },
+});
+
+// Create store without persist for SSR compatibility
+const useCalendarStoreBase = create<CalendarState>()(
+  devtools(storeCreator)
 );
+
+// Create persisted store for client side only
+let persistedStore: any;
+
+// Export store with SSR safety
+export const useCalendarStore = ((selector?: any) => {
+  // During SSR, return base store without persistence
+  if (typeof window === 'undefined') {
+    return useCalendarStoreBase(selector);
+  }
+  
+  // On client side, use persisted store
+  if (!persistedStore) {
+    persistedStore = create<CalendarState>()(
+      devtools(
+        persist(
+          storeCreator,
+          {
+            name: 'calendar-storage',
+            partialize: (state) => ({
+              currentView: state.currentView,
+              filters: state.filters,
+            }),
+          }
+        )
+      )
+    );
+  }
+  
+  return persistedStore(selector);
+}) as typeof useCalendarStoreBase;
