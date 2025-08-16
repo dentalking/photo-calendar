@@ -38,6 +38,7 @@ yarn-error.log*
 .env.production.local
 .env.production
 .env.production.test
+.env.production.final
 .env.secure
 .env.check
 .env.production.check

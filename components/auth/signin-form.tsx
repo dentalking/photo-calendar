@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { signIn } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
@@ -20,9 +20,14 @@ export function SignInForm({ callbackUrl, error }: SignInFormProps) {
   }>({
     google: false,
   })
+  const [isMounted, setIsMounted] = useState(false)
+
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
 
   // Parse error from URL params or props
-  const authError = error || searchParams.get('error')
+  const authError = error || (searchParams ? searchParams.get('error') : null)
 
   const getErrorMessage = (errorCode: string | null) => {
     if (!errorCode) return null
@@ -46,6 +51,8 @@ export function SignInForm({ callbackUrl, error }: SignInFormProps) {
   }
 
   const handleProviderSignIn = async (provider: 'google') => {
+    if (!isMounted) return;
+    
     try {
       setIsLoading(prev => ({ ...prev, [provider]: true }))
 
@@ -55,7 +62,7 @@ export function SignInForm({ callbackUrl, error }: SignInFormProps) {
         : '/dashboard'
 
       // Clear any existing errors from URL
-      if (authError) {
+      if (authError && typeof window !== 'undefined') {
         const newUrl = new URL(window.location.href)
         newUrl.searchParams.delete('error')
         router.replace(newUrl.pathname + newUrl.search)
