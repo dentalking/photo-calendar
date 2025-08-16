@@ -1,12 +1,11 @@
-import { onCLS, onFCP, onFID, onLCP, onTTFB, onINP, Metric } from 'web-vitals';
+import { onCLS, onFCP, onLCP, onTTFB, onINP, Metric } from 'web-vitals';
 
 interface PerformanceMetrics {
   CLS?: number;  // Cumulative Layout Shift
   FCP?: number;  // First Contentful Paint
-  FID?: number;  // First Input Delay
   LCP?: number;  // Largest Contentful Paint
   TTFB?: number; // Time to First Byte
-  INP?: number;  // Interaction to Next Paint
+  INP?: number;  // Interaction to Next Paint (replaces FID)
 }
 
 class PerformanceMonitor {
@@ -25,10 +24,9 @@ class PerformanceMonitor {
     // Core Web Vitals
     onCLS(this.handleMetric.bind(this));
     onFCP(this.handleMetric.bind(this));
-    onFID(this.handleMetric.bind(this));
     onLCP(this.handleMetric.bind(this));
     onTTFB(this.handleMetric.bind(this));
-    onINP(this.handleMetric.bind(this));
+    onINP(this.handleMetric.bind(this)); // INP replaces FID as the responsiveness metric
   }
 
   private handleMetric(metric: Metric) {

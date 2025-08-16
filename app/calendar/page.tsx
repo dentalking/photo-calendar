@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { Calendar, ChevronLeft, ChevronRight, Plus, Search, Filter, Grid3x3, List, CalendarDays, Settings } from 'lucide-react';
+import { GoogleSyncButton } from '@/components/calendar/google-sync-button';
 import { useCalendarStore } from '@/lib/stores/calendar-store';
 import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/button';
@@ -323,14 +324,7 @@ export default function CalendarPage() {
               </Button>
               
               {/* Google Calendar Sync Button */}
-              <Button 
-                variant="outline" 
-                onClick={handleGoogleCalendarSync}
-                className="mr-2"
-              >
-                <Calendar className="h-4 w-4 mr-2" />
-                Google 동기화
-              </Button>
+              <GoogleSyncButton />
               
               {/* Add Event Button */}
               <Button onClick={() => openCreateModal()}>
