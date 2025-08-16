@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
+import { Toaster as SonnerToaster } from "sonner";
 import { SessionProvider } from "@/components/auth/session-provider";
 import { getOptionalAuthSession } from "@/lib/auth/helpers";
 import { ThemeProvider } from "@/components/theme/theme-provider";
@@ -104,6 +105,7 @@ export default async function RootLayout({
             <OfflineIndicator />
           </SessionProvider>
           <Toaster />
+          <SonnerToaster richColors position="top-center" />
         </ThemeProvider>
       </body>
     </html>
