@@ -62,7 +62,10 @@ const nextConfig: NextConfig = {
   // Webpack configuration for bundle optimization
   webpack: (config, { isServer }) => {
     if (!isServer) {
-      // Replace react with preact in production for smaller bundle
+      // Note: Preact replacement disabled due to React 18+ hook compatibility issues
+      // Preact compat doesn't support newer React features like use() hook
+      // If you want to use Preact, ensure all React features are compatible
+      /*
       if (process.env.NODE_ENV === 'production') {
         Object.assign(config.resolve.alias, {
           'react/jsx-runtime': 'preact/compat/jsx-runtime',
@@ -70,6 +73,7 @@ const nextConfig: NextConfig = {
           'react-dom': 'preact/compat',
         });
       }
+      */
       
       // Split chunks optimization
       config.optimization.splitChunks = {
