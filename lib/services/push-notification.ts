@@ -319,6 +319,22 @@ export function getPushNotificationService(): PushNotificationService {
 
 // Hook for React components
 export function usePushNotifications() {
+  // Only create service on client side
+  if (typeof window === 'undefined') {
+    return {
+      requestPermission: () => Promise.resolve(false),
+      subscribe: () => Promise.resolve(null),
+      unsubscribe: () => Promise.resolve(false),
+      showNotification: () => Promise.resolve(),
+      scheduleNotification: () => Promise.resolve(),
+      getStatus: () => ({
+        permission: 'default' as NotificationPermission,
+        isSubscribed: false,
+        isSupported: false,
+      }),
+    };
+  }
+  
   const service = getPushNotificationService();
   
   return {

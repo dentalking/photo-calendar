@@ -327,18 +327,32 @@ export function getBackgroundSyncManager(): BackgroundSyncManager {
 
 // Hook for React components
 export function useBackgroundSync() {
+  // Only access manager on client side
+  if (typeof window === 'undefined') {
+    return {
+      addToQueue: () => Promise.resolve(),
+      processQueue: () => Promise.resolve(),
+      getQueueStatus: () => Promise.resolve({
+        count: 0,
+        oldestItem: null,
+        newestItem: null,
+      }),
+      clearQueue: () => Promise.resolve(),
+    };
+  }
+  
   const manager = getBackgroundSyncManager();
   
   return {
     addToQueue: (action: SyncQueueItem['action'], data: any) => 
-      manager?.addToQueue(action, data),
-    processQueue: () => manager?.processQueue(),
+      manager?.addToQueue(action, data) || Promise.resolve(),
+    processQueue: () => manager?.processQueue() || Promise.resolve(),
     getQueueStatus: () => manager?.getQueueStatus() || Promise.resolve({
       count: 0,
       oldestItem: null,
       newestItem: null,
     }),
-    clearQueue: () => manager?.clearQueue(),
+    clearQueue: () => manager?.clearQueue() || Promise.resolve(),
   };
 }
 
