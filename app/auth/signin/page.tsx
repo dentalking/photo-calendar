@@ -1,4 +1,3 @@
-import { Suspense } from 'react'
 import { SignInForm } from '@/components/auth/signin-form'
 
 import { Metadata } from 'next'
@@ -36,16 +35,10 @@ export default async function SignInPage({ searchParams }: PageProps) {
         </div>
 
         <div className="bg-white rounded-xl shadow-lg p-8">
-          <Suspense fallback={
-            <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-            </div>
-          }>
-            <SignInForm 
-              callbackUrl={params.callbackUrl}
-              error={params.error}
-            />
-          </Suspense>
+          <SignInForm 
+            callbackUrl={params.callbackUrl}
+            error={params.error}
+          />
         </div>
 
         <div className="text-center">

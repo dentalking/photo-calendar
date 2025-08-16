@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { signIn } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
@@ -12,7 +12,7 @@ interface SignInFormProps {
   error?: string
 }
 
-export function SignInForm({ callbackUrl, error }: SignInFormProps) {
+function SignInFormContent({ callbackUrl, error }: SignInFormProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [isLoading, setIsLoading] = useState<{
@@ -27,7 +27,7 @@ export function SignInForm({ callbackUrl, error }: SignInFormProps) {
   }, [])
 
   // Parse error from URL params or props
-  const authError = error || (searchParams ? searchParams.get('error') : null)
+  const authError = error || searchParams?.get('error')
 
   const getErrorMessage = (errorCode: string | null) => {
     if (!errorCode) return null
@@ -158,5 +158,17 @@ export function SignInForm({ callbackUrl, error }: SignInFormProps) {
         </div>
       </div>
     </div>
+  )
+}
+
+export function SignInForm(props: SignInFormProps) {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center py-8">
+        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+      </div>
+    }>
+      <SignInFormContent {...props} />
+    </Suspense>
   )
 }
