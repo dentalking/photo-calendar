@@ -5,6 +5,7 @@ import { useCalendarStore } from '@/lib/stores/calendar-store'
 import { MonthView } from './views/month-view'
 import { WeekView } from './views/week-view'
 import { DayView } from './views/day-view'
+import { DndContext } from '@dnd-kit/core'
 
 export default function CalendarView() {
   const currentView = useCalendarStore((state) => state.currentView);
@@ -52,8 +53,10 @@ export default function CalendarView() {
   }
 
   return (
-    <div className="flex-1 overflow-auto">
-      {renderView()}
-    </div>
+    <DndContext>
+      <div className="flex-1 overflow-auto">
+        {renderView()}
+      </div>
+    </DndContext>
   )
 }
