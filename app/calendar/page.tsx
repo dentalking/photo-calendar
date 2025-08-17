@@ -99,8 +99,8 @@ export default function CalendarPage() {
     fetchEvents();
   }, []);
 
-  // Convert events to match the view components' expected format
-  const filteredEvents = getFilteredEvents().map(event => ({
+  // Get filtered events and transform for view components
+  const filteredEvents = (getFilteredEvents() || []).map(event => ({
     ...event,
     startDate: event.startTime,
     endDate: event.endTime,

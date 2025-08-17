@@ -343,13 +343,7 @@ const storeCreator = (set: any, get: any) => ({
       }
       
       return true;
-    }).map((event: CalendarEvent) => ({
-      ...event,
-      startDate: event.startTime,
-      endDate: event.endTime,
-      status: event.confidence && event.confidence >= 0.8 ? 'CONFIRMED' : 'PENDING',
-      confidenceScore: event.confidence || 1,
-    }));
+    });
   },
 });
 
