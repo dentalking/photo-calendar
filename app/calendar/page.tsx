@@ -20,25 +20,7 @@ import toast, { Toaster } from 'react-hot-toast';
 
 // Lazy load heavy components with error handling
 const CalendarView = dynamic(
-  () => import('@/components/calendar/calendar-view')
-    .then(mod => mod.CalendarView)
-    .catch(err => {
-      console.error('Failed to load CalendarView:', err);
-      // Return a fallback component
-      return () => (
-        <div className="flex items-center justify-center h-96">
-          <div className="text-center space-y-4">
-            <p className="text-red-600">캘린더를 불러오는 중 오류가 발생했습니다.</p>
-            <button 
-              onClick={() => window.location.reload()}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-            >
-              다시 시도
-            </button>
-          </div>
-        </div>
-      );
-    }),
+  () => import('@/components/calendar/calendar-view'),
   { 
     loading: () => (
       <div className="flex items-center justify-center h-96">
@@ -50,22 +32,34 @@ const CalendarView = dynamic(
 );
 
 const EventModal = dynamic(
-  () => import('@/components/calendar/event-modal').then(mod => mod.EventModal),
+  async () => {
+    const { EventModal } = await import('@/components/calendar/event-modal');
+    return { default: EventModal };
+  },
   { ssr: false }
 );
 
 const PhotoUpload = dynamic(
-  () => import('@/components/ui/photo-upload').then(mod => mod.PhotoUpload),
+  async () => {
+    const { PhotoUpload } = await import('@/components/ui/photo-upload');
+    return { default: PhotoUpload };
+  },
   { ssr: false }
 );
 
 const SyncProgress = dynamic(
-  () => import('@/components/calendar/sync-progress').then(mod => mod.SyncProgress),
+  async () => {
+    const { SyncProgress } = await import('@/components/calendar/sync-progress');
+    return { default: SyncProgress };
+  },
   { ssr: false }
 );
 
 const EventCard = dynamic(
-  () => import('@/components/ui/event-card').then(mod => mod.EventCard),
+  async () => {
+    const { EventCard } = await import('@/components/ui/event-card');
+    return { default: EventCard };
+  },
   { ssr: false }
 );
 

@@ -10,7 +10,7 @@ import { EventCard } from '@/components/ui/event-card'
 import { useToast } from '@/lib/hooks/use-toast'
 import { useTouchGestures } from '@/lib/hooks/use-touch-gestures'
 
-export function CalendarView() {
+export default function CalendarView() {
   const currentView = useCalendarStore((state) => state.currentView);
   const draggedEvent = useCalendarStore((state) => state.draggedEvent);
   const setDraggedEvent = useCalendarStore((state) => state.setDraggedEvent);
