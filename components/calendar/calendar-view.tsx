@@ -11,14 +11,12 @@ import { useToast } from '@/lib/hooks/use-toast'
 import { useTouchGestures } from '@/lib/hooks/use-touch-gestures'
 
 export function CalendarView() {
-  const { 
-    currentView, 
-    draggedEvent, 
-    setDraggedEvent, 
-    updateEvent,
-    isLoading,
-    navigateMonth 
-  } = useCalendarStore()
+  const currentView = useCalendarStore((state) => state.currentView);
+  const draggedEvent = useCalendarStore((state) => state.draggedEvent);
+  const setDraggedEvent = useCalendarStore((state) => state.setDraggedEvent);
+  const updateEvent = useCalendarStore((state) => state.updateEvent);
+  const isLoading = useCalendarStore((state) => state.isLoading);
+  const navigateMonth = useCalendarStore((state) => state.navigateMonth);
   const { toast } = useToast()
   const calendarRef = useRef<HTMLDivElement>(null)
 

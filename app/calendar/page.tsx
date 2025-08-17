@@ -95,31 +95,30 @@ export default function CalendarPage() {
   const [showSyncProgress, setShowSyncProgress] = useState(false);
   const [processingFiles, setProcessingFiles] = useState<Map<string, ProcessingStatus>>(new Map());
   
-  const {
-    currentView,
-    currentDate,
-    events,
-    loading,
-    filters,
-    isCreateModalOpen,
-    setView,
-    navigateMonth,
-    fetchEvents,
-    searchEvents,
-    setFilters,
-    openCreateModal,
-    closeCreateModal,
-    openEventModal,
-    selectDate,
-    getFilteredEvents,
-  } = useCalendarStore();
+  const currentView = useCalendarStore((state) => state.currentView);
+  const currentDate = useCalendarStore((state) => state.currentDate);
+  const events = useCalendarStore((state) => state.events);
+  const loading = useCalendarStore((state) => state.loading);
+  const filters = useCalendarStore((state) => state.filters);
+  const isCreateModalOpen = useCalendarStore((state) => state.isCreateModalOpen);
+  const setView = useCalendarStore((state) => state.setView);
+  const navigateMonth = useCalendarStore((state) => state.navigateMonth);
+  const fetchEvents = useCalendarStore((state) => state.fetchEvents);
+  const searchEvents = useCalendarStore((state) => state.searchEvents);
+  const setFilters = useCalendarStore((state) => state.setFilters);
+  const openCreateModal = useCalendarStore((state) => state.openCreateModal);
+  const closeCreateModal = useCalendarStore((state) => state.closeCreateModal);
+  const openEventModal = useCalendarStore((state) => state.openEventModal);
+  const selectDate = useCalendarStore((state) => state.selectDate);
+  const getFilteredEvents = useCalendarStore((state) => state.getFilteredEvents);
 
   useEffect(() => {
     fetchEvents();
   }, []);
 
   // Get filtered events and transform for view components
-  const filteredEvents = (getFilteredEvents() || []).map(event => ({
+  const rawEvents = getFilteredEvents();
+  const filteredEvents = (Array.isArray(rawEvents) ? rawEvents : []).map(event => ({
     ...event,
     startDate: event.startTime,
     endDate: event.endTime,
@@ -439,7 +438,7 @@ export default function CalendarPage() {
           <div className="flex justify-center items-center h-96">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
           </div>
-        ) : currentView === 'list' ? (
+        ) : (currentView === 'list' ? (
           <div className="space-y-4">
             {filteredEvents.length === 0 ? (
               <Card className="p-12 text-center">
@@ -478,8 +477,22 @@ export default function CalendarPage() {
             )}
           </div>
         ) : (
-          <CalendarView />
-        )}
+          <ErrorBoundary fallback={
+            <div className="flex items-center justify-center h-96">
+              <div className="text-center space-y-4">
+                <p className="text-red-600">캘린더 뷰 로드 중 오류가 발생했습니다.</p>
+                <button 
+                  onClick={() => window.location.reload()}
+                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                >
+                  다시 시도
+                </button>
+              </div>
+            </div>
+          }>
+            <CalendarView />
+          </ErrorBoundary>
+        ))}
       </div>
 
       {/* Create Event Modal */}
