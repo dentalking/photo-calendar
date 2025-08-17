@@ -22,6 +22,7 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { signIn } from 'next-auth/react';
 
 export function GoogleSyncButton() {
   const [isSyncing, setIsSyncing] = useState(false);
@@ -135,10 +136,28 @@ export function GoogleSyncButton() {
         window.location.reload();
       } else {
         setSyncStatus('disconnected');
-        toast.error('동기화 실패', {
-          description: data.error || '알 수 없는 오류가 발생했습니다',
-          icon: <AlertCircle className="h-4 w-4" />,
-        });
+        
+        // Check if re-authentication is required
+        if (data.requiresReauth) {
+          toast.error('인증 만료', {
+            description: data.message || 'Google 계정으로 다시 로그인해주세요.',
+            icon: <AlertCircle className="h-4 w-4" />,
+            action: {
+              label: '다시 로그인',
+              onClick: () => {
+                signIn('google', {
+                  callbackUrl: '/calendar',
+                  prompt: 'consent',
+                });
+              },
+            },
+          });
+        } else {
+          toast.error('동기화 실패', {
+            description: data.error || '알 수 없는 오류가 발생했습니다',
+            icon: <AlertCircle className="h-4 w-4" />,
+          });
+        }
       }
     } catch (error) {
       setSyncStatus('disconnected');
@@ -168,9 +187,27 @@ export function GoogleSyncButton() {
         });
       } else {
         setSyncStatus('disconnected');
-        toast.error('연결 실패', {
-          description: 'Google Calendar에 연결할 수 없습니다. 다시 로그인해주세요.',
-        });
+        
+        // Check if re-authentication is required
+        if (data.requiresReauth) {
+          toast.error('인증 만료', {
+            description: data.message || 'Google 계정으로 다시 로그인해주세요.',
+            icon: <AlertCircle className="h-4 w-4" />,
+            action: {
+              label: '다시 로그인',
+              onClick: () => {
+                signIn('google', {
+                  callbackUrl: '/calendar',
+                  prompt: 'consent',
+                });
+              },
+            },
+          });
+        } else {
+          toast.error('연결 실패', {
+            description: data.error || 'Google Calendar에 연결할 수 없습니다.',
+          });
+        }
       }
     } catch (error) {
       setSyncStatus('disconnected');
@@ -234,6 +271,16 @@ export function GoogleSyncButton() {
         <DropdownMenuItem onClick={testConnection}>
           <CheckCircle className="mr-2 h-4 w-4" />
           연결 테스트
+        </DropdownMenuItem>
+        
+        <DropdownMenuItem 
+          onClick={() => signIn('google', { 
+            callbackUrl: '/calendar',
+            prompt: 'consent' 
+          })}
+        >
+          <RefreshCw className="mr-2 h-4 w-4" />
+          Google 계정 다시 연결
         </DropdownMenuItem>
         
         {queueCount > 0 && (

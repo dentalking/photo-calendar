@@ -26,8 +26,23 @@ export async function POST(request: NextRequest) {
       return ApiResponse.unauthorized('Authentication required');
     }
     
+    // Check for token refresh error
+    if (session?.error === 'RefreshTokenError') {
+      return NextResponse.json({
+        success: false,
+        error: 'Token refresh failed',
+        requiresReauth: true,
+        message: 'Google Calendar 인증이 만료되었습니다. 다시 로그인해주세요.',
+      }, { status: 401 });
+    }
+    
     if (!session?.accessToken) {
-      return ApiResponse.unauthorized('Google Calendar access token not found. Please re-authenticate.');
+      return NextResponse.json({
+        success: false,
+        error: 'No access token',
+        requiresReauth: true,
+        message: 'Google Calendar 액세스 토큰을 찾을 수 없습니다. 다시 로그인해주세요.',
+      }, { status: 401 });
     }
 
     const body = await request.json() as SyncRequest;
@@ -40,9 +55,29 @@ export async function POST(request: NextRequest) {
     );
 
     // Test connection first
-    const isConnected = await calendarService.testConnection();
+    let isConnected = false;
+    try {
+      isConnected = await calendarService.testConnection();
+    } catch (error: any) {
+      console.error('Connection test error:', error);
+      // Check if it's an authentication error
+      if (error?.response?.status === 401 || error?.code === 401) {
+        return NextResponse.json({
+          success: false,
+          error: 'Authentication failed',
+          requiresReauth: true,
+          message: 'Google Calendar 인증이 실패했습니다. 다시 로그인해주세요.',
+        }, { status: 401 });
+      }
+    }
+    
     if (!isConnected) {
-      return ApiResponse.serviceUnavailable('Unable to connect to Google Calendar. Please re-authenticate.');
+      return NextResponse.json({
+        success: false,
+        error: 'Connection failed',
+        requiresReauth: true,
+        message: 'Google Calendar에 연결할 수 없습니다. 다시 로그인해주세요.',
+      }, { status: 503 });
     }
 
     let results: any[] = [];
@@ -51,16 +86,29 @@ export async function POST(request: NextRequest) {
     switch (action) {
       case 'test-connection':
         // Test Google Calendar connection
-        const calendars = await calendarService.getCalendarList();
-        return ApiResponse.success({
-          connected: true,
-          calendars: calendars.map(cal => ({
-            id: cal.id,
-            summary: cal.summary,
-            primary: cal.primary,
-            accessRole: cal.accessRole,
-          }))
-        });
+        try {
+          const calendars = await calendarService.getCalendarList();
+          return ApiResponse.success({
+            connected: true,
+            calendars: calendars.map(cal => ({
+              id: cal.id,
+              summary: cal.summary,
+              primary: cal.primary,
+              accessRole: cal.accessRole,
+            }))
+          });
+        } catch (error: any) {
+          console.error('Calendar list error:', error);
+          if (error?.response?.status === 401 || error?.code === 401) {
+            return NextResponse.json({
+              success: false,
+              error: 'Authentication failed',
+              requiresReauth: true,
+              message: 'Google Calendar 인증이 실패했습니다. 다시 로그인해주세요.',
+            }, { status: 401 });
+          }
+          throw error;
+        }
 
       case 'pull-events':
         // Pull events from Google Calendar (import)
@@ -299,8 +347,23 @@ export async function GET(request: NextRequest) {
       return ApiResponse.unauthorized('Authentication required');
     }
     
+    // Check for token refresh error
+    if (session?.error === 'RefreshTokenError') {
+      return NextResponse.json({
+        success: false,
+        error: 'Token refresh failed',
+        requiresReauth: true,
+        message: 'Google Calendar 인증이 만료되었습니다. 다시 로그인해주세요.',
+      }, { status: 401 });
+    }
+    
     if (!session?.accessToken) {
-      return ApiResponse.unauthorized('Google Calendar access token not found. Please re-authenticate.');
+      return NextResponse.json({
+        success: false,
+        error: 'No access token',
+        requiresReauth: true,
+        message: 'Google Calendar 액세스 토큰을 찾을 수 없습니다. 다시 로그인해주세요.',
+      }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);

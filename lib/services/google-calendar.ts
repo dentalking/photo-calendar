@@ -280,8 +280,14 @@ export class GoogleCalendarService {
         calendarId: 'primary',
       });
       return response.status === 200;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Google Calendar connection test failed:', error);
+      
+      // If it's an authentication error, throw it up to be handled
+      if (error?.response?.status === 401 || error?.code === 401) {
+        throw error;
+      }
+      
       return false;
     }
   }
@@ -295,8 +301,14 @@ export class GoogleCalendarService {
         minAccessRole: 'writer',
       });
       return response.data.items || [];
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching calendar list:', error);
+      
+      // If it's an authentication error, throw it up to be handled
+      if (error?.response?.status === 401 || error?.code === 401) {
+        throw error;
+      }
+      
       return [];
     }
   }

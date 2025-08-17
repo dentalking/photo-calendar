@@ -7,6 +7,7 @@ import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { Calendar, ChevronLeft, ChevronRight, Plus, Search, Filter, Grid3x3, List, CalendarDays, Settings } from 'lucide-react';
 import { GoogleSyncButton } from '@/components/calendar/google-sync-button';
+import { AuthStatusBanner } from '@/components/calendar/auth-status-banner';
 import { useCalendarStore } from '@/lib/stores/calendar-store';
 import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/button';
@@ -258,6 +259,9 @@ export default function CalendarPage() {
   return (
     <ErrorBoundary>
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      {/* Authentication Status Banner */}
+      <AuthStatusBanner />
+      
       {/* Header */}
       <div className="bg-white dark:bg-gray-800 shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
