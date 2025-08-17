@@ -146,8 +146,11 @@ const storeCreator = (set: any, get: any) => ({
       
       const data = await response.json();
       
+      // Extract events array from the API response
+      const eventsData = data.data?.events || data.events || [];
+      
       // Convert date strings to Date objects
-      const events = data.map((event: any) => ({
+      const events = eventsData.map((event: any) => ({
         ...event,
         startTime: new Date(event.startTime),
         endTime: event.endTime ? new Date(event.endTime) : undefined,
@@ -181,7 +184,8 @@ const storeCreator = (set: any, get: any) => ({
         throw new Error('Failed to create event');
       }
       
-      const newEvent = await response.json();
+      const data = await response.json();
+      const newEvent = data.data?.event || data.event || data;
       
       // Convert dates
       newEvent.startTime = new Date(newEvent.startTime);
@@ -222,7 +226,8 @@ const storeCreator = (set: any, get: any) => ({
         throw new Error('Failed to update event');
       }
       
-      const updatedEvent = await response.json();
+      const data = await response.json();
+      const updatedEvent = data.data?.event || data.event || data;
       
       // Convert dates
       updatedEvent.startTime = new Date(updatedEvent.startTime);
