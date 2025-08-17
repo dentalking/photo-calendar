@@ -179,7 +179,7 @@ export function MonthView() {
     getEventsForDate, 
     openEventModal, 
     openCreateModal,
-    getFilteredEvents 
+    getTransformedEvents 
   } = useCalendarStore()
 
   // Calculate the calendar grid dates
@@ -204,7 +204,7 @@ export function MonthView() {
     openCreateModal(date)
   }
 
-  const allEvents = getFilteredEvents()
+  const allEvents = getTransformedEvents()
   const eventsInView = allEvents.filter(event => {
     return event.startDate >= calendarStart && event.startDate <= calendarEnd
   })

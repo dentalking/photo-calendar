@@ -74,12 +74,14 @@ interface CalendarState {
   setCreateModalOpen: (isOpen: boolean) => void;
   setSelectedEvent: (event: any) => void;
   setShowEventModal: (show: boolean) => void;
-  openCreateModal: () => void;
+  openCreateModal: (date?: Date) => void;
   closeCreateModal: () => void;
   openEventModal: (event: any) => void;
   closeEventModal: () => void;
   searchEvents: (query: string) => void;
   getFilteredEvents: () => CalendarEvent[];
+  getEventsForDate: (date: Date) => CalendarEvent[];
+  getTransformedEvents: () => any[];
   setIsDragging: (isDragging: boolean) => void;
   setDraggedEvent: (event: CalendarEvent | undefined) => void;
   setEvents: (events: CalendarEvent[]) => void;
@@ -305,7 +307,7 @@ const storeCreator = (set: any, get: any) => ({
   setCreateModalOpen: (isOpen: boolean) => set({ isCreateModalOpen: isOpen }),
   setSelectedEvent: (event: any) => set({ selectedEvent: event }),
   setShowEventModal: (show: boolean) => set({ showEventModal: show }),
-  openCreateModal: () => set({ isCreateModalOpen: true }),
+  openCreateModal: (date?: Date) => set({ isCreateModalOpen: true, selectedDate: date || null }),
   closeCreateModal: () => set({ isCreateModalOpen: false }),
   openEventModal: (event: any) => set({ selectedEvent: event, isEventModalOpen: true }),
   closeEventModal: () => set({ selectedEvent: null, isEventModalOpen: false }),
@@ -357,6 +359,30 @@ const storeCreator = (set: any, get: any) => ({
       
       return true;
     });
+  },
+  
+  getEventsForDate: (date: Date) => {
+    const state = get();
+    return state.getTransformedEvents().filter((event: any) => {
+      const eventDate = new Date(event.startDate);
+      return eventDate.getFullYear() === date.getFullYear() &&
+             eventDate.getMonth() === date.getMonth() &&
+             eventDate.getDate() === date.getDate();
+    });
+  },
+  
+  getTransformedEvents: () => {
+    const state = get();
+    const events = state.getFilteredEvents();
+    return events.map((event: CalendarEvent) => ({
+      ...event,
+      startDate: event.startTime,
+      endDate: event.endTime,
+      status: event.confidence && event.confidence >= 0.8 ? 'CONFIRMED' : 'PENDING',
+      confidenceScore: event.confidence || 1,
+      isUserVerified: true,
+      isVisible: true,
+    }));
   },
 });
 

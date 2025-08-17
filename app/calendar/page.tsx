@@ -105,20 +105,14 @@ export default function CalendarPage() {
   const openEventModal = useCalendarStore((state) => state.openEventModal);
   const selectDate = useCalendarStore((state) => state.selectDate);
   const getFilteredEvents = useCalendarStore((state) => state.getFilteredEvents);
+  const getTransformedEvents = useCalendarStore((state) => state.getTransformedEvents);
 
   useEffect(() => {
     fetchEvents();
   }, []);
 
-  // Get filtered events and transform for view components
-  const rawEvents = getFilteredEvents();
-  const filteredEvents = (Array.isArray(rawEvents) ? rawEvents : []).map(event => ({
-    ...event,
-    startDate: event.startTime,
-    endDate: event.endTime,
-    status: event.confidence && event.confidence >= 0.8 ? 'CONFIRMED' : 'PENDING',
-    confidenceScore: event.confidence || 1,
-  }));
+  // Get filtered and transformed events for view components
+  const filteredEvents = getTransformedEvents();
 
   const handlePhotoUpload = async (files: Array<{id: string; file: File; preview: string; error?: string}>) => {
     const actualFiles = files.filter(f => !f.error).map(f => f.file);
