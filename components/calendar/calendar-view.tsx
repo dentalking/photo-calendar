@@ -7,7 +7,7 @@ import { WeekView } from './views/week-view'
 import { DayView } from './views/day-view'
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent } from '@dnd-kit/core'
 import { EventCard } from '@/components/ui/event-card'
-import { useToast } from '@/lib/hooks/use-toast'
+import toast from 'react-hot-toast'
 import { useTouchGestures } from '@/lib/hooks/use-touch-gestures'
 
 export default function CalendarView() {
@@ -17,7 +17,7 @@ export default function CalendarView() {
   const updateEvent = useCalendarStore((state) => state.updateEvent);
   const isLoading = useCalendarStore((state) => state.isLoading);
   const navigateMonth = useCalendarStore((state) => state.navigateMonth);
-  const { toast } = useToast()
+  // Toast notifications using react-hot-toast
   const calendarRef = useRef<HTMLDivElement>(null)
 
   const handleDragStart = (event: DragStartEvent) => {
@@ -45,17 +45,10 @@ export default function CalendarView() {
             endTime: newEndTime
           })
           
-          toast({
-            title: '일정이 이동되었습니다',
-            description: `"${draggedEvent.title}"이(가) ${dropDate.toLocaleDateString('ko-KR')}로 이동되었습니다.`,
-          })
+          toast.success(`"${draggedEvent.title}"이(가) ${dropDate.toLocaleDateString('ko-KR')}로 이동되었습니다.`)
         } catch (error) {
           console.error('Error moving event:', error)
-          toast({
-            title: '일정 이동 실패',
-            description: '일정을 이동하는 중 오류가 발생했습니다.',
-            variant: 'destructive',
-          })
+          toast.error('일정을 이동하는 중 오류가 발생했습니다.')
         }
       }
     }
@@ -69,20 +62,14 @@ export default function CalendarView() {
       // Navigate to next period
       if (currentView === 'month' || currentView === 'week') {
         navigateMonth('next')
-        toast({
-          title: '다음 달로 이동',
-          duration: 1000,
-        })
+        toast('다음 달로 이동', { duration: 1000 })
       }
     },
     onSwipeRight: () => {
       // Navigate to previous period
       if (currentView === 'month' || currentView === 'week') {
         navigateMonth('prev')
-        toast({
-          title: '이전 달로 이동',
-          duration: 1000,
-        })
+        toast('이전 달로 이동', { duration: 1000 })
       }
     },
     threshold: 50,
