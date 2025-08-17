@@ -15,7 +15,6 @@ export function CalendarView() {
     currentView, 
     draggedEvent, 
     setDraggedEvent, 
-    moveEvent, 
     updateEvent,
     isLoading,
     navigateMonth 
@@ -30,7 +29,7 @@ export function CalendarView() {
     }
   }
 
-  const handleDragEnd = (event: DragEndEvent) => {
+  const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event
     
     if (over && draggedEvent) {
@@ -38,14 +37,22 @@ export function CalendarView() {
       
       if (dropDate && dropDate instanceof Date) {
         try {
-          // Move the event to the new date
-          moveEvent(draggedEvent.id, dropDate)
+          // Calculate the time difference and update the event
+          const timeDiff = dropDate.getTime() - draggedEvent.startTime.getTime()
+          const newStartTime = new Date(draggedEvent.startTime.getTime() + timeDiff)
+          const newEndTime = draggedEvent.endTime ? new Date(draggedEvent.endTime.getTime() + timeDiff) : undefined
+          
+          await updateEvent(draggedEvent.id, {
+            startTime: newStartTime,
+            endTime: newEndTime
+          })
           
           toast({
             title: '일정이 이동되었습니다',
             description: `"${draggedEvent.title}"이(가) ${dropDate.toLocaleDateString('ko-KR')}로 이동되었습니다.`,
           })
         } catch (error) {
+          console.error('Error moving event:', error)
           toast({
             title: '일정 이동 실패',
             description: '일정을 이동하는 중 오류가 발생했습니다.',

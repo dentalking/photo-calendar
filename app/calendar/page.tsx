@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
+import ErrorBoundary from '@/components/error-boundary';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { Calendar, ChevronLeft, ChevronRight, Plus, Search, Filter, Grid3x3, List, CalendarDays, Settings } from 'lucide-react';
@@ -17,9 +18,27 @@ import { LoadingIndicator } from '@/components/ui/loading-indicator';
 import { cn } from '@/lib/utils';
 import toast, { Toaster } from 'react-hot-toast';
 
-// Lazy load heavy components
+// Lazy load heavy components with error handling
 const CalendarView = dynamic(
-  () => import('@/components/calendar/calendar-view').then(mod => mod.CalendarView),
+  () => import('@/components/calendar/calendar-view')
+    .then(mod => mod.CalendarView)
+    .catch(err => {
+      console.error('Failed to load CalendarView:', err);
+      // Return a fallback component
+      return () => (
+        <div className="flex items-center justify-center h-96">
+          <div className="text-center space-y-4">
+            <p className="text-red-600">캘린더를 불러오는 중 오류가 발생했습니다.</p>
+            <button 
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            >
+              다시 시도
+            </button>
+          </div>
+        </div>
+      );
+    }),
   { 
     loading: () => (
       <div className="flex items-center justify-center h-96">
@@ -250,7 +269,8 @@ export default function CalendarPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <ErrorBoundary>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
       <div className="bg-white dark:bg-gray-800 shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -562,6 +582,7 @@ export default function CalendarPage() {
           },
         }}
       />
-    </div>
+      </div>
+    </ErrorBoundary>
   );
 }

@@ -74,6 +74,12 @@ interface CalendarState {
   setCreateModalOpen: (isOpen: boolean) => void;
   setSelectedEvent: (event: any) => void;
   setShowEventModal: (show: boolean) => void;
+  openCreateModal: () => void;
+  closeCreateModal: () => void;
+  openEventModal: (event: any) => void;
+  closeEventModal: () => void;
+  searchEvents: (query: string) => void;
+  getFilteredEvents: () => CalendarEvent[];
   setIsDragging: (isDragging: boolean) => void;
   setDraggedEvent: (event: CalendarEvent | undefined) => void;
   setEvents: (events: CalendarEvent[]) => void;
@@ -294,11 +300,18 @@ const storeCreator = (set: any, get: any) => ({
   
   clearFilters: () => set({ filters: initialFilters }),
   
-  // Modal actions
+  // Modal actions  
   setEventModalOpen: (isOpen: boolean) => set({ isEventModalOpen: isOpen }),
   setCreateModalOpen: (isOpen: boolean) => set({ isCreateModalOpen: isOpen }),
   setSelectedEvent: (event: any) => set({ selectedEvent: event }),
   setShowEventModal: (show: boolean) => set({ showEventModal: show }),
+  openCreateModal: () => set({ isCreateModalOpen: true }),
+  closeCreateModal: () => set({ isCreateModalOpen: false }),
+  openEventModal: (event: any) => set({ selectedEvent: event, isEventModalOpen: true }),
+  closeEventModal: () => set({ selectedEvent: null, isEventModalOpen: false }),
+  searchEvents: (query: string) => set((state: CalendarState) => ({
+    filters: { ...state.filters, searchQuery: query }
+  })),
   
   // Drag and drop actions
   setIsDragging: (isDragging: boolean) => set({ isDragging }),
