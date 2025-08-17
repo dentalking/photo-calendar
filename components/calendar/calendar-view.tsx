@@ -8,7 +8,7 @@ import { DayView } from './views/day-view'
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent } from '@dnd-kit/core'
 import { EventCard } from '@/components/ui/event-card'
 import toast from 'react-hot-toast'
-import { useTouchGestures } from '@/lib/hooks/use-touch-gestures'
+// import { useTouchGestures } from '@/lib/hooks/use-touch-gestures'
 
 export default function CalendarView() {
   const currentView = useCalendarStore((state) => state.currentView);
@@ -56,25 +56,8 @@ export default function CalendarView() {
     setDraggedEvent(undefined)
   }
 
-  // Touch gesture handlers for mobile navigation
-  const { isGesturing } = useTouchGestures(calendarRef, {
-    onSwipeLeft: () => {
-      // Navigate to next period
-      if (currentView === 'month' || currentView === 'week') {
-        navigateMonth('next')
-        toast('다음 달로 이동', { duration: 1000 })
-      }
-    },
-    onSwipeRight: () => {
-      // Navigate to previous period
-      if (currentView === 'month' || currentView === 'week') {
-        navigateMonth('prev')
-        toast('이전 달로 이동', { duration: 1000 })
-      }
-    },
-    threshold: 50,
-    enabled: true
-  })
+  // Touch gesture handlers temporarily disabled
+  const isGesturing = false
 
   const renderView = () => {
     switch (currentView) {
@@ -108,7 +91,7 @@ export default function CalendarView() {
       <div 
         ref={calendarRef}
         className="flex-1 overflow-auto touch-pan-y"
-        style={{ touchAction: isGesturing ? 'none' : 'pan-y' }}
+        style={{ touchAction: 'pan-y' }}
       >
         {renderView()}
       </div>
